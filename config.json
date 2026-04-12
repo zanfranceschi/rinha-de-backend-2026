@@ -2,5 +2,5 @@
     "participants_dir": "participants",
     "test_script": "run.sh",
     "submission_health_check_endpoint": "http://localhost:9999/ready",
-    "api_issues_url": "https://github.com/zanfranceschi/rinha-de-backend-2026/issues"
+    "api_issues_url": "https://api.github.com/repos/zanfranceschi/rinha-de-backend-2026/issues"
 }

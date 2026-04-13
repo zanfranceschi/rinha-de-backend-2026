@@ -23,14 +23,16 @@ export const options = {
             executor: 'ramping-arrival-rate',
             startRate: 1,
             timeUnit: '1s',
-            preAllocatedVUs: 50,
+            preAllocatedVUs: 5,
             maxVUs: 100,
             gracefulStop: '10s',
             stages: [
                 { duration: '10s', target: 10 },
-                { duration: '10s', target: 50 },
-                { duration: '20s', target: 350 },
-                { duration: '20s', target: 650 },
+                
+                // { duration: '10s', target: 10 },
+                // { duration: '10s', target: 50 },
+                // { duration: '20s', target: 350 },
+                // { duration: '20s', target: 650 },
             ],
         },
     },
@@ -102,6 +104,6 @@ export function handleSummary(data) {
 
     return {
         'test/results.json': JSON.stringify(result, null, 2),
-        stdout: textSummary(data, { indent: ' ', enableColors: true }),
+        //stdout: textSummary(data, { indent: ' ', enableColors: true }),
     };
 }

@@ -176,6 +176,40 @@ static NormCfg load_norm(const char *path) {
     return c;
 }
 
+static RefVec *load_refs(const char *path, int *out_n) {
+    char *s = read_file(path);
+    cJSON *j = cJSON_Parse(s);
+    if (!j || !cJSON_IsArray(j)) {
+        fprintf(stderr, "error: invalid refs JSON in %s\n", path);
+        exit(1);
+    }
+    int n = cJSON_GetArraySize(j);
+    RefVec *refs = malloc((size_t)n * sizeof(RefVec));
+    int i = 0;
+    cJSON *item = NULL;
+    cJSON_ArrayForEach(item, j) {
+        cJSON *vec   = cJSON_GetObjectItem(item, "vector");
+        cJSON *label = cJSON_GetObjectItem(item, "label");
+        if (!cJSON_IsArray(vec) || cJSON_GetArraySize(vec) != VDIM) {
+            fprintf(stderr, "error: ref %d has invalid vector (expected %d dims)\n", i, VDIM);
+            exit(1);
+        }
+        if (!cJSON_IsString(label)) {
+            fprintf(stderr, "error: ref %d missing label\n", i);
+            exit(1);
+        }
+        for (int k = 0; k < VDIM; k++)
+            refs[i].v[k] = cJSON_GetArrayItem(vec, k)->valuedouble;
+        strncpy(refs[i].label, label->valuestring, 7);
+        refs[i].label[7] = '\0';
+        i++;
+    }
+    cJSON_Delete(j);
+    free(s);
+    *out_n = n;
+    return refs;
+}
+
 static MCCMap load_mcc(const char *path) {
     char *s = read_file(path);
     cJSON *j = cJSON_Parse(s);
@@ -395,18 +429,16 @@ static void normalize(const Request *req, const NormCfg *cfg, const MCCMap *mcc_
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   KNN — cosine distance, brute-force
+   KNN — euclidean distance, brute-force
    ═══════════════════════════════════════════════════════════════════════════ */
 
-static double cosine_dist(const double *a, const double *b) {
-    double dot = 0, ma = 0, mb = 0;
+static double euclidean_dist(const double *a, const double *b) {
+    double sum = 0;
     for (int i = 0; i < VDIM; i++) {
-        dot += a[i] * b[i];
-        ma  += a[i] * a[i];
-        mb  += b[i] * b[i];
+        double d = a[i] - b[i];
+        sum += d * d;
     }
-    double denom = sqrt(ma) * sqrt(mb);
-    return denom < 1e-10 ? 1.0 : 1.0 - dot / denom;
+    return sqrt(sum);
 }
 
 static void knn_classify(const double *vec, const RefVec *refs, int nrefs,
@@ -416,7 +448,7 @@ static void knn_classify(const double *vec, const RefVec *refs, int nrefs,
     for (int i = 0; i < KNN_K; i++) { dists[i] = 1e30; idxs[i] = -1; }
 
     for (int i = 0; i < nrefs; i++) {
-        double d = cosine_dist(vec, refs[i].v);
+        double d = euclidean_dist(vec, refs[i].v);
         for (int j = 0; j < KNN_K; j++) {
             if (d < dists[j]) {
                 for (int k = KNN_K - 1; k > j; k--) {
@@ -507,6 +539,9 @@ static void usage(const char *prog) {
         "  --norm-cfg PATH      path to normalization.json (default: resources/normalization.json)\n"
         "  --mcc-cfg PATH       path to mcc_risk.json (default: resources/mcc_risk.json)\n"
         "  --refs-out PATH      output path for references.json (default: resources/references.json)\n"
+        "  --reuse-refs         skip reference generation; load from --refs-in instead\n"
+        "  --refs-in PATH       input path for references.json when --reuse-refs is set\n"
+        "                       (default: resources/references.json)\n"
         "  --payloads-out PATH  output path for test-data.json (default: test/test-data.json)\n"
         "  --pretty-json        indent JSON output (default: compact)\n"
         "  --help               show this message\n",
@@ -519,6 +554,8 @@ int main(int argc, char **argv) {
     const char *mcc_path      = "resources/mcc_risk.json";
     double fraud_ratio = 0.30;
     const char *refs_out      = "resources/references.json";
+    const char *refs_in       = "resources/references.json";
+    int reuse_refs            = 0;
     const char *payloads_out  = "test/test-data.json";
 
     for (int i = 1; i < argc; i++) {
@@ -534,6 +571,10 @@ int main(int argc, char **argv) {
             fraud_ratio = atof(argv[++i]);
         else if (strcmp(argv[i], "--refs-out") == 0 && i + 1 < argc)
             refs_out = argv[++i];
+        else if (strcmp(argv[i], "--refs-in") == 0 && i + 1 < argc)
+            refs_in = argv[++i];
+        else if (strcmp(argv[i], "--reuse-refs") == 0)
+            reuse_refs = 1;
         else if (strcmp(argv[i], "--payloads-out") == 0 && i + 1 < argc)
             payloads_out = argv[++i];
         else if (strcmp(argv[i], "--pretty-json") == 0)
@@ -553,33 +594,41 @@ int main(int argc, char **argv) {
     MCCMap  mcc  = load_mcc(mcc_path);
 
     /* --- Referencias --- */
-    printf("Generating %d reference vectors...\n", ref_size);
-    RefVec *refs = malloc((size_t)ref_size * sizeof(RefVec));
+    RefVec *refs = NULL;
     Rng rng;
-    rng_init(&rng, REF_SEED);
 
-    for (int i = 0; i < ref_size; i++) {
-        Profile p   = pick_profile(&rng, fraud_ratio);
-        Request req = gen_request(&rng, p, &mcc);
-        normalize(&req, &norm, &mcc, refs[i].v);
-        for (int j = 0; j < VDIM; j++) refs[i].v[j] = round4(refs[i].v[j]);
+    if (reuse_refs) {
+        printf("Loading reference vectors from %s...\n", refs_in);
+        refs = load_refs(refs_in, &ref_size);
+        printf("  -> loaded %d vectors\n", ref_size);
+    } else {
+        printf("Generating %d reference vectors...\n", ref_size);
+        refs = malloc((size_t)ref_size * sizeof(RefVec));
+        rng_init(&rng, REF_SEED);
 
-        if (p == BORDERLINE)
-            strcpy(refs[i].label, rng_f64(&rng) < 0.5 ? "fraud" : "legit");
-        else
-            strcpy(refs[i].label, p == FRAUD ? "fraud" : "legit");
+        for (int i = 0; i < ref_size; i++) {
+            Profile p   = pick_profile(&rng, fraud_ratio);
+            Request req = gen_request(&rng, p, &mcc);
+            normalize(&req, &norm, &mcc, refs[i].v);
+            for (int j = 0; j < VDIM; j++) refs[i].v[j] = round4(refs[i].v[j]);
+
+            if (p == BORDERLINE)
+                strcpy(refs[i].label, rng_f64(&rng) < 0.5 ? "fraud" : "legit");
+            else
+                strcpy(refs[i].label, p == FRAUD ? "fraud" : "legit");
+        }
+
+        cJSON *refs_json = cJSON_CreateArray();
+        for (int i = 0; i < ref_size; i++) {
+            cJSON *item = cJSON_CreateObject();
+            cJSON_AddItemToObject(item, "vector", jnum_array(refs[i].v, VDIM));
+            cJSON_AddStringToObject(item, "label", refs[i].label);
+            cJSON_AddItemToArray(refs_json, item);
+        }
+        write_json_file(refs_out, refs_json);
+        cJSON_Delete(refs_json);
+        printf("  -> %s (%d vectors)\n", refs_out, ref_size);
     }
-
-    cJSON *refs_json = cJSON_CreateArray();
-    for (int i = 0; i < ref_size; i++) {
-        cJSON *item = cJSON_CreateObject();
-        cJSON_AddItemToObject(item, "vector", jnum_array(refs[i].v, VDIM));
-        cJSON_AddStringToObject(item, "label", refs[i].label);
-        cJSON_AddItemToArray(refs_json, item);
-    }
-    write_json_file(refs_out, refs_json);
-    cJSON_Delete(refs_json);
-    printf("  -> %s (%d vectors)\n", refs_out, ref_size);
 
     /* --- Payloads de teste --- */
     printf("Generating %d test payloads...\n", payload_size);

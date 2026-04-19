@@ -97,8 +97,8 @@ export function handleSummary(data) {
         diff: {
             fraud_count: Math.abs(expectedStats.fraud_count - fc),
             legit_count: Math.abs(expectedStats.legit_count - lc),
-            fraud_rate: +Math.abs(expectedStats.fraud_rate - actualFraudRate).toFixed(4),
-            legit_rate: +Math.abs(expectedStats.legit_rate - actualLegitRate).toFixed(4),
+            fraud_percent: +(Math.abs(expectedStats.fraud_rate - actualFraudRate) * 100).toFixed(2) + '%',
+            legit_percent: +(Math.abs(expectedStats.legit_rate - actualLegitRate) * 100).toFixed(2) + '%',
         },
         response_times: {
             min: httpDuration.min.toFixed(2) + 'ms',

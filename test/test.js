@@ -28,11 +28,9 @@ export const options = {
             gracefulStop: '10s',
             stages: [
                 { duration: '10s', target: 10 },
-                
-                // { duration: '10s', target: 10 },
-                // { duration: '10s', target: 50 },
-                // { duration: '20s', target: 350 },
-                // { duration: '20s', target: 650 },
+                { duration: '10s', target: 50 },
+                { duration: '20s', target: 350 },
+                { duration: '20s', target: 650 },
             ],
         },
     },

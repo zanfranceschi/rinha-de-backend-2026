@@ -12,7 +12,7 @@ set -euo pipefail
 
 time ./data-generator/generate \
     --reuse-refs \
-    --payloads 10000 \
+    --payloads 15000 \
     --payloads-out test/test-data.json \
     --fraud-ratio 0.35 \
     --mcc-cfg resources/mcc_risk.json

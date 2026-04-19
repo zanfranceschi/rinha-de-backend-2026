@@ -94,18 +94,13 @@ export function handleSummary(data) {
                 http_req_failed_count: httpFailed.passes || 0,
             },
         },
-        diff: {
-            fraud_count: Math.abs(expectedStats.fraud_count - fc),
-            legit_count: Math.abs(expectedStats.legit_count - lc),
-            fraud_percent: +(Math.abs(expectedStats.fraud_rate - actualFraudRate) * 100).toFixed(2) + '%',
-            legit_percent: +(Math.abs(expectedStats.legit_rate - actualLegitRate) * 100).toFixed(2) + '%',
-        },
-        response_times: {
-            min: httpDuration.min.toFixed(2) + 'ms',
-            max: httpDuration.max.toFixed(2) + 'ms',
-            med: httpDuration['med'].toFixed(2) + 'ms',
-            p90: httpDuration['p(90)'].toFixed(2) + 'ms',
-            p99: httpDuration['p(99)'].toFixed(2) + 'ms',
+        scoring: {
+            response_times_min: httpDuration.min.toFixed(2) + 'ms',
+            response_times_max: httpDuration.max.toFixed(2) + 'ms',
+            response_times_med: httpDuration['med'].toFixed(2) + 'ms',
+            response_times_p90: httpDuration['p(90)'].toFixed(2) + 'ms',
+            response_times_p99: httpDuration['p(99)'].toFixed(2) + 'ms',
+            rate_deviation_percent: +(Math.abs(expectedStats.fraud_rate - actualFraudRate) * 100).toFixed(2) + '%',
         },
     };
 

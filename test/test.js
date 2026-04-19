@@ -78,18 +78,27 @@ export function handleSummary(data) {
     const httpReqs = data.metrics.http_reqs ? data.metrics.http_reqs.values.count : 0;
     const httpFailed = data.metrics.http_req_failed ? data.metrics.http_req_failed.values : {};
 
+    const actualFraudRate = sent > 0 ? +(fc / sent).toFixed(4) : 0;
+    const actualLegitRate = sent > 0 ? +(lc / sent).toFixed(4) : 0;
+
     const result = {
         expected: expectedStats,
         actual: {
-            fraud_rate: sent > 0 ? +(fc / sent).toFixed(4) : 0,
+            fraud_rate: actualFraudRate,
             legit_count: lc,
             fraud_count: fc,
             total_requests: sent,
-            legit_rate: sent > 0 ? +(lc / sent).toFixed(4) : 0,
+            legit_rate: actualLegitRate,
             errors: {
                 http_req_failed_rate: httpFailed.rate || 0,
                 http_req_failed_count: httpFailed.passes || 0,
             },
+        },
+        diff: {
+            fraud_count: Math.abs(expectedStats.fraud_count - fc),
+            legit_count: Math.abs(expectedStats.legit_count - lc),
+            fraud_rate: +Math.abs(expectedStats.fraud_rate - actualFraudRate).toFixed(4),
+            legit_rate: +Math.abs(expectedStats.legit_rate - actualLegitRate).toFixed(4),
         },
         response_times: {
             min: httpDuration.min.toFixed(2) + 'ms',

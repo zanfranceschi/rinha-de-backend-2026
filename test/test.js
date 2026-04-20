@@ -107,9 +107,15 @@ export function handleSummary(data) {
             p99: httpDuration['p(99)'].toFixed(2) + 'ms',
         },
         scoring: {
-            p99: httpDuration['p(99)'].toFixed(2) + 'ms',
+            breakdown : {
+                false_positive_detections: fp,
+                false_negative_detections: fn,
+                true_positive_detections: tp,
+                true_negative_detections: tn,
+                p99: httpDuration['p(99)'].toFixed(2) + 'ms',
+                http_errors: errs,
+            },
             target_p99_ms: TARGET_P99_MS,
-            breakdown: { tp, tn, fp, fn, errors: errs },
             latency_multiplier: +latencyMult.toFixed(4),
             raw_score: rawScore,
             final_score: +finalScore.toFixed(2),

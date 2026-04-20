@@ -106,7 +106,7 @@ Por exemplo:
           ↓
 4. computa o score para fraude com threshold de 0.6 para fraudes:
     score: 2 fraudes / 5 registros = 0.4
-    approved = score >= 0.6
+    approved = score >= 0.6 → true
           ↓
 5. responde com o resultado:
     {
@@ -155,7 +155,7 @@ Alguns valores, como `max_amount` e `max_installments`, estão definidos no arqu
 
 #### Exemplos Práticos
 
-Os três exemplos abaixo ilustram fluxos completos. A busca pelos 5 vizinhos mais próximos entre as referências usa **distância euclidiana** sobre os vetores de 14 dimensões, mas você pode usar outros algoritmos de métrica de distância.
+Os quatro exemplos abaixo ilustram fluxos completos. A busca pelos 5 vizinhos mais próximos entre as referências usa **distância euclidiana** sobre os vetores de 14 dimensões, mas você pode usar outros algoritmos de métrica de distância se preferir.
 
 ##### Exemplo 1 — Transação legítima (score: 0.0)
 
@@ -259,3 +259,36 @@ Os três exemplos abaixo ilustram fluxos completos. A busca pelos 5 vizinhos mai
     }
 ```
 
+##### Exemplo 4 — Transação fraudulenta sem `last_transaction` (score: 1.0)
+
+```
+1. recebe a requisição:
+    {
+      "id": "tx-3330991687",
+      "transaction":      { "amount": 9505.97, "installments": 10, "requested_at": "2026-03-14T05:15:12Z" },
+      "customer":         { "avg_amount": 81.28, "tx_count_24h": 20, "known_merchants": ["MERC-008", "MERC-007", "MERC-005"] },
+      "merchant":         { "id": "MERC-068", "mcc": "7802", "avg_amount": 54.86 },
+      "terminal":         { "is_online": false, "card_present": true, "km_from_home": 952.27 },
+      "last_transaction": null
+    }
+          ↓
+2. vetoriza/normaliza (14 dimensões — note os `-1` nos índices 5 e 6 por causa do `last_transaction: null`):
+    [0.9506, 0.8333, 1.0, 0.2174, 0.8333, -1, -1, 0.9523, 1.0, 0, 1, 1, 0.75, 0.0055]
+          ↓
+3. encontra os 5 vizinhos mais próximos (distância euclidiana):
+    dist=0.2315  fraud
+    dist=0.2384  fraud
+    dist=0.2552  fraud
+    dist=0.2667  fraud
+    dist=0.2785  fraud
+          ↓
+4. computa o score (threshold 0.6):
+    score = 5 fraudes / 5 = 1.0
+    approved = score < 0.6 → false
+          ↓
+5. resposta:
+    {
+      "approved": false,
+      "fraud_score": 1.0
+    }
+```

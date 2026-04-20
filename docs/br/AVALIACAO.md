@@ -1,10 +1,14 @@
 # Avaliação e Pontuação
 
-Como sua submissão é avaliada.
+Como sua submissão será avaliada.
 
 ## Teste de Carga
 
-> TODO: descrever cenário (k6, ramping-arrival-rate, stages, VUs).
+O teste de carga usa o [k6](https://k6.io/) num cenário incremental super simples de requisições. O script para o teste está localizado em [test](/test) junto com sua massa de dados (requisições que serão feitas). É importante notar que o script disponibilizado aqui serve para que você execute seus próprios testes e pode não ser a versão final do teste :)
+
+Siga as [instruções oficiais](https://grafana.com/docs/k6/latest/) para executar os testes.
+
+As instruções para que seu backend seja de fato testado, estão [descritas aqui](/docs/br/SUBMISSAO.md) sob a seção **Execução do Teste**.
 
 ## Métricas Coletadas
 

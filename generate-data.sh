@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-
 # time ./data-generator/generate \
 #     --refs 100000 \
 #     --refs-out resources/references.json \

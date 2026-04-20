@@ -9,11 +9,19 @@ set -euo pipefail
 #     --fraud-ratio 0.35 \
 #     --mcc-cfg resources/mcc_risk.json
 
-time ./data-generator/generate \
-    --reuse-refs \
-    --payloads 14500 \
-    --payloads-out test/test-data.json \
-    --fraud-ratio 0.35 \
-    --mcc-cfg resources/mcc_risk.json
+# time ./data-generator/generate \
+#     --reuse-refs \
+#     --payloads 14500 \
+#     --payloads-out test/test-data.json \
+#     --fraud-ratio 0.35 \
+#     --mcc-cfg resources/mcc_risk.json
 
 # gzip -9 -k resources/references.json
+
+./data-generator/generate \
+    --refs 100 \
+    --refs-out resources/example-references.json \
+    --payloads 50 \
+    --payloads-out resources/example-payloads.json \
+    --fraud-ratio 0.35 \
+    --mcc-cfg resources/mcc_risk.json

@@ -127,3 +127,25 @@ Resposta:
 Os três vizinhos mais próximos têm em comum *valor alto, horário tardio e portador de alto padrão* — exatamente o "formato" de transações marcadas como fraude no dataset.
 
 A busca vetorial **não "entende" fraude** — ela apenas encontra as transações passadas mais parecidas e deixa a maioria decidir o rótulo da nova.
+
+
+
+---
+
+Não, é impreciso. Há duas coisas distintas acontecendo:
+
+1. Geração dos payloads (o request em si):
+Feita por gen_request() usando PRNG (PCG32) + regras por perfil (LEGIT/FRAUD/BORDERLINE) em main.c:272-391. Cada campo (amount, mcc, km_home, etc.) é sorteado dentro de faixas determinadas pelo perfil. KNN não participa disso.
+
+2. Rotulagem dos payloads (expected_response):
+Aí sim — knn_classify() usa KNN (k=5) com euclidiana para atribuir approved e fraud_score comparando o vetor normalizado do payload contra as referências.
+
+Formulação tecnicamente correta:
+
+Os payloads são gerados sinteticamente via PRNG com perfis rotulados (legit/fraud/borderline), e suas respostas esperadas são rotuladas por KNN (k=5) com distância euclidiana contra um conjunto de vetores de referência de 14 dimensões.
+
+A diferença importa porque:
+
+Trocar o PRNG/perfis muda a distribuição dos dados.
+Trocar KNN/euclidiana muda apenas a função de rotulagem (o ground truth).
+São eixos independentes.

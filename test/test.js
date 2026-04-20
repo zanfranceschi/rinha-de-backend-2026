@@ -12,9 +12,6 @@ const testData = new SharedArray('test-data', function () {
     return testFile.entries;
 });
 
-const totalSent = new Counter('total_sent');
-const fraudCount = new Counter('fraud_count');
-const legitCount = new Counter('legit_count');
 const tpCount = new Counter('tp_count');
 const tnCount = new Counter('tn_count');
 const fpCount = new Counter('fp_count');
@@ -56,8 +53,6 @@ export default function () {
     const entry = testData[idx];
     const expected = entry.info.expected_response;
 
-    totalSent.add(1);
-
     const res = http.post(
         'http://localhost:9999/fraud-score',
         JSON.stringify(entry.request),
@@ -66,12 +61,6 @@ export default function () {
 
     if (res.status === 200) {
         const body = JSON.parse(res.body);
-        if (body.approved) {
-            legitCount.add(1);
-        } else {
-            fraudCount.add(1);
-        }
-
         // Per-request scoring: compare against expected.approved
         // expected.approved === true  --> legit transaction
         // expected.approved === false --> fraud transaction
@@ -89,12 +78,6 @@ export default function () {
 
 export function handleSummary(data) {
     const httpDuration = data.metrics.http_req_duration.values;
-
-    const sent = data.metrics.total_sent ? data.metrics.total_sent.values.count : 0;
-    const fc = data.metrics.fraud_count ? data.metrics.fraud_count.values.count : 0;
-    const lc = data.metrics.legit_count ? data.metrics.legit_count.values.count : 0;
-    const httpReqs = data.metrics.http_reqs ? data.metrics.http_reqs.values.count : 0;
-    const httpFailed = data.metrics.http_req_failed ? data.metrics.http_req_failed.values : {};
 
     const tp = data.metrics.tp_count ? data.metrics.tp_count.values.count : 0;
     const tn = data.metrics.tn_count ? data.metrics.tn_count.values.count : 0;
@@ -114,23 +97,8 @@ export function handleSummary(data) {
     const latencyMult = TARGET_P99_MS / Math.max(p99, TARGET_P99_MS);
     const finalScore = Math.max(0, rawScore) * latencyMult;
 
-    const actualFraudRate = sent > 0 ? +(fc / sent).toFixed(4) : 0;
-    const actualLegitRate = sent > 0 ? +(lc / sent).toFixed(4) : 0;
-
     const result = {
         expected: expectedStats,
-        actual: {
-            fraud_rate: actualFraudRate,
-            legit_count: lc,
-            fraud_count: fc,
-            total_requests: sent,
-            legit_rate: actualLegitRate,
-            fraud_rate_error_percent: +(Math.abs(expectedStats.fraud_rate - actualFraudRate) * 100).toFixed(2) + '%',
-            errors: {
-                http_req_failed_rate: httpFailed.rate || 0,
-                http_req_failed_count: httpFailed.passes || 0,
-            },
-        },
         response_times: {
             min: httpDuration.min.toFixed(2) + 'ms',
             max: httpDuration.max.toFixed(2) + 'ms',

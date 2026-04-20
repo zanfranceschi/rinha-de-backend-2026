@@ -74,7 +74,7 @@ Endpoint para detecção de fraudes. O formato do payload é como o seguinte exe
 
 # Lógica para Detecção de Fraude
 
-Para explicar a lógica de detecção de fraude, vamos usar um exemplo simplificado. As dimensões corretas e a ordem dos valores no vetor são explicadas em detalhes mais adiante.
+Vamos usar um exemplo simplificado para explicar a lógica de detecção de fraude. As dimensões corretas e a ordem dos valores no vetor são explicadas em detalhes mais adiante.
 
 A do processamento é a seguinte:
 1. Transformar a transação no corpo da requisção (payload) que está em formato JSON para um vetor.

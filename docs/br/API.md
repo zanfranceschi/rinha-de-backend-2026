@@ -77,7 +77,7 @@ Endpoint para detecção de fraudes. O formato do payload é como o seguinte exe
 Vamos usar um exemplo simplificado para explicar a lógica de detecção de fraude. As dimensões corretas e a ordem dos valores no vetor são detalhadas mais adiante.
 
 A lógica do processamento é a seguinte:
-1. Transformar a transação no corpo da requisção (payload) que está em formato JSON para um vetor.
+1. Transformar a transação do corpo da requisção (payload) que está em formato JSON para um vetor.
 1. Realizar uma busca vetorial nas [referências](/resources/references.json.gz) pelas 5 referências mais similares.
 1. Classificar a transação como fraudulenta ou legítima junto com seu score de fraude.
 
@@ -85,32 +85,32 @@ Por exemplo:
 
 ```
 1. recebe a requisção:
-{
-    "amount": 10.00,
-    "installments": 12,
-    "requested_at": "2026-04-20T12:34:56Z",
-    "last_transaction_at": "2026-04-20T23:59:37Z"
-}
+    {
+        "amount": 10.00,
+        "installments": 12,
+        "requested_at": "2026-04-20T12:34:56Z",
+        "last_transaction_at": "2026-04-20T23:59:37Z"
+    }
           ↓
 2. vetoriza/normaliza
-[0.34 1.00 0.50 0.99]
+    [0.34 1.00 0.50 0.99]
           ↓
 3. encontra as 5 referências mais similares através de busca vetorial:
-[0.15 0.81 0.83 0.89]: legit
-[0.02 0.38 0.44 0.88]: fraud
-[0.95 0.02 0.20 0.52]: fraud
-[0.74 0.93 0.87 0.27]: legit
-[0.78 0.93 0.87 0.27]: legit
+    [0.15 0.81 0.83 0.89]: legit
+    [0.02 0.38 0.44 0.88]: fraud
+    [0.95 0.02 0.20 0.52]: fraud
+    [0.74 0.93 0.87 0.27]: legit
+    [0.78 0.93 0.87 0.27]: legit
           ↓
 4. computa o score para fraude com threshold de 0.6 para fraudes:
     score: 2 fraudes / 5 registros = 0.4
     approved = score >= 0.6
           ↓
 5. responde com o resultado:
-{
-  "approved": true,
-  "fraud_score": 0.4
-}
+    {
+    "approved": true,
+    "fraud_score": 0.4
+    }
 ```
 
 Seu endpoint `POST /fraud-score` deve realizar o seguinte processamento e responder se a transação requisição se trata de uma fraude ou não assim como seu `fraud score`. Para isso, você deve seguir estes passos:

@@ -97,6 +97,9 @@ export function handleSummary(data) {
     const latencyMult = TARGET_P99_MS / Math.max(p99, TARGET_P99_MS);
     const finalScore = Math.max(0, rawScore) * latencyMult;
 
+    const classified = tp + tn + fp + fn;
+    const accuracy = classified > 0 ? (tp + tn) / classified : 0;
+
     const result = {
         expected: expectedStats,
         response_times: {
@@ -115,6 +118,7 @@ export function handleSummary(data) {
                 p99: httpDuration['p(99)'].toFixed(2) + 'ms',
                 http_errors: errs,
             },
+            accuracy: +(accuracy * 100).toFixed(2) + '%',
             target_p99_ms: TARGET_P99_MS,
             latency_multiplier: +latencyMult.toFixed(4),
             raw_score: rawScore,

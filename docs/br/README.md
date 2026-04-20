@@ -1,14 +1,12 @@
 # Rinha de Backend 2026 – Detecção de Fraude por Busca Vetorial!
 
-## Sobre esta Edição
+## Sobre esta edição
 
-Nesta edição, você vai construir uma **API de detecção de fraude em transações financeiras**. A cada requisição de autorização, sua API recebe os dados de uma transação e precisa responder se ela deve ser **aprovada** ou **negada**, junto com um *fraud score* entre `0.0` e `1.0`.
-
-A detecção da fraude é feita por **busca vetorial**: a transação é transformada em um vetor de 14 dimensões e comparada a um dataset de referência com 100 mil transações já classificadas como fraude ou legítimas. As `N` referências mais parecidas "votam" — se a maioria for fraude, a nova transação também é classificada como fraude.
+O desafio é construir uma **API de detecção de fraude em autorizações de cartão**. Sua API recebe uma transação, transforma-a em um vetor e usa **busca vetorial** contra um dataset de referência com transações já classificadas como fraudulentas ou legítimas para decidir se a transação deve ser aprovada ou negada junto com um score de fraude.
 
 ```mermaid
 flowchart LR
-    Client[Cliente] -->|1. transação| Sistema[Sistema de Aprovação<br/>de Transações]
+    Client[Cliente] -->|1. transação de cartão| Sistema[Sistema de Autorização<br/>de Cartão]
     Sistema -->|2. consulta| Fraude[Módulo de<br/>Detecção de Fraude]
     Fraude -->|3. decisão + score| Sistema
     Sistema -->|4. aprovada/negada| Client
@@ -20,66 +18,42 @@ flowchart LR
 O módulo destacado em verde é **o que você vai construir**.
 
 
-## O Básico do Desafio
-
-```mermaid
-flowchart TB
-    subgraph linha1 [ ]
-        direction LR
-        A[POST /fraud-score<br/>transação bruta] --> B[1. Normalizar campos<br/>→ vetor de 14 dimensões]
-        B --> C[2. Busca vetorial no dataset<br/>cosseno, euclidiana, etc.]
-        C --> D[3. Selecionar K=5<br/>vizinhos mais próximos]
-    end
-    subgraph linha2 [ ]
-        direction LR
-        E[4. Votação por maioria<br/>→ fraud_score] --> F{fraud_score ≥ 0.6?}
-        F -->|sim| G[approved: false]
-        F -->|não| H[approved: true]
-        G --> I[5. Retornar<br/>approved + fraud_score]
-        H --> I
-    end
-    linha1 --> linha2
-
-    style linha1 fill:none,stroke:none
-    style linha2 fill:none,stroke:none
-```
+## O Básico do desafio
 
 1. A API recebe um `POST /fraud-score` com os dados da transação.
 1. Normaliza os campos em um vetor de 14 dimensões (valores entre `0.0` e `1.0`).
-1. Faz uma **busca vetorial** contra o dataset de referência — pode ser por distância de cosseno, euclidiana ou **qualquer outra métrica de distância** que você preferir.
+1. Faz uma **busca vetorial** no dataset de referência.
 1. Pega os `K=5` vizinhos mais próximos e faz votação por maioria.
 1. Retorna `{ approved, fraud_score }`, por exemplo:
    ```json
    { "approved": false, "fraud_score": 0.8 }
    ```
 
-**A infraestrutura** é o setup clássico da Rinha: duas ou mais instâncias da API atrás de um load balancer com limite de CPU e memória (1.0 CPU e 350MB de memória no total).
+**A arquitetura e restrições** é o clássico da Rinha de Backend: um load balancer com duas ou mais APIs e o perrengue de sempre com quase nada de CPU e memória – [confira aqui](./ARQUITETURA_E_RESTICOES.md).
 
 ---
 
-## Trilha de Leitura
-
-Leia nesta ordem (ou pule direto para o que te interessa):
+## O que mais você precisa saber / Próximos passos
 
 1. **[BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md)** — O que é busca vetorial, normalização e KNN, com exemplo passo-a-passo.
    *Essencial se você nunca trabalhou com vetores ou KNN.*
 
-2. **[DATASET.md](./DATASET.md)** — Formato dos arquivos de referência (`references.json`, `mcc_risk.json`, `normalization.json`) e as 14 dimensões do vetor.
+1. **[DATASET.md](./DATASET.md)** — Formato dos arquivos de referência (`references.json`, `mcc_risk.json`, `normalization.json`) e as 14 dimensões do vetor.
    *Para entender como transformar o payload em vetor.*
 
-3. **[API.md](./API.md)** — Contrato dos endpoints (`POST /fraud-score`, `GET /ready`), formato do payload e da resposta.
+1. **[API.md](./API.md)** — Contrato dos endpoints (`POST /fraud-score`, `GET /ready`), formato do payload e da resposta.
    *Essencial — é o que sua submissão precisa implementar.*
 
-4. **[ARQUITETURA.md](./ARQUITETURA.md)** — Limites de CPU/memória, docker-compose, nginx, portas, stateless.
+1. **[ARQUITETURA_E_RESTICOES.md](./ARQUITETURA_E_RESTICOES.md)** — Limites de CPU/memória, docker-compose, nginx, portas, stateless.
    *Antes de montar o container de submissão.*
 
-5. **[AVALIACAO.md](./AVALIACAO.md)** — Fórmula de pontuação, peso de FP/FN, multiplicador de latência, como rodar o teste local.
+1. **[AVALIACAO.md](./AVALIACAO.md)** — Fórmula de pontuação, peso de FP/FN, multiplicador de latência, como rodar o teste local.
    *Para otimizar sua pontuação.*
 
-6. **[SUBMISSAO.md](./SUBMISSAO.md)** — Passo-a-passo do PR, checklist e data limite.
+1. **[SUBMISSAO.md](./SUBMISSAO.md)** — Passo-a-passo do PR, checklist e data limite.
    *Quando estiver pronto para submeter.*
 
-7. **[FAQ.md](./FAQ.md)** — Dúvidas recorrentes, armadilhas comuns, o que pode e não pode.
+1. **[FAQ.md](./FAQ.md)** — Dúvidas recorrentes, armadilhas comuns, o que pode e não pode.
 
 ---
 

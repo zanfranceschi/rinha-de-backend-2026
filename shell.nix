@@ -9,10 +9,11 @@ let
         pkgs.gnumake
         pkgs.k6
         pkgs.jq
+        pkgs.zsh
     ];
 
     shellHook = ''
-        code .
+        exec zsh
     '';
     };
 in shell

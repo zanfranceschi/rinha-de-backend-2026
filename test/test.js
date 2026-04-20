@@ -92,7 +92,7 @@ export function handleSummary(data) {
     //   -5 per HTTP error / non-200
     // Then multiplied by latency factor based on p99.
     const TARGET_P99_MS = 10;
-    const rawScore = tp + tn - fp - 3 * fn - 5 * errs;
+    const rawScore = (tp * 1) + (tn * 1) + (fp * -1) + (fn * -3) + (errs * -5);
     const p99 = httpDuration['p(99)'];
     const latencyMult = TARGET_P99_MS / Math.max(p99, TARGET_P99_MS);
     const finalScore = Math.max(0, rawScore) * latencyMult;

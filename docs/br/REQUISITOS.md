@@ -110,8 +110,8 @@ Por exemplo:
           ↓
 5. responde com o resultado:
     {
-    "approved": true,
-    "fraud_score": 0.4
+        "approved": true,
+        "fraud_score": 0.4
     }
 ```
 

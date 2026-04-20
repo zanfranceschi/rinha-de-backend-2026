@@ -2,7 +2,145 @@
 
 ## O Desafio
 
-Você foi contratado para construir um módulo de detectção de fraude que será integrado a um sistema completo de aprovação de transações de cartão. 
+Você foi contratada/o para construir um módulo de **Detectção de Fraude** que será integrado a um sistema completo de aprovação de transações financeiras!
+
+```mermaid
+flowchart LR
+    Client[Cliente] -->|1. transação| Sistema[Sistema de Aprovação<br/>de Transações]
+    Sistema -->|2. consulta| Fraude[Módulo de<br/>Detecção de Fraude]
+    Fraude -->|3. decisão + score| Sistema
+    Sistema -->|4. aprovada/negada| Client
+
+    classDef highlight fill:#4ade80,stroke:#15803d,stroke-width:3px,color:#000,font-weight:bold
+    class Fraude highlight
+```
+
+Seu módulo deverá detectar fraudes se baseando em um dataset de referência [(*references.json.gz*)](./resources/) com 100k registros usando busca vetorial!
+
+**Não se assuste! Busca vetorial é mais simples do que você imagina caso nunca tenha ouvido falar disso antes!**
+
+### Busca Vetorial / Dataset de Referência
+O arquivo [references.json](./resources/references.json.gz) possui um formato semelhante ao seguinte:
+```json
+[
+  { "vector": [0.0100, 0.0833, 0.05], "label": "legit" },
+  { "vector": [0.5796, 0.9167, 1.00], "label": "fraud" },
+  { "vector": [0.0035, 0.1667, 0.05], "label": "legit" },
+  { "vector": [0.9708, 1.0000, 1.00], "label": "fraud" },
+  { "vector": [0.4082, 1.0000, 1.00], "label": "fraud" },
+  { "vector": [0.0092, 0.0833, 0.05], "label": "legit" }
+]
+```
+*Obs.: Esse exemplo possui vetores de 3 dimensões; o original possui 14 dimensões. Todas as explicações a seguir se aplicam igualmente a vetores de quaisquer dimensões.*
+
+Os vetores representam as variadas dimensões de uma transação e se ela é classificada com fraudulenta ou legítima (`legit|fraud`).
+
+Vamos imaginar que essas 3 dimensões representam o seguinte:
+- Valor da Transação
+- Hora do Dia
+- Média do Valor de Transação do Portador
+
+Para que os vetores não fiquem assim (com valores absolutos)...
+```json
+[
+  { "vector": [12.00,    9,  23.97], "label": "legit" },
+  { "vector": [12000.00, 23, 500.34], "label": "fraud" }
+]
+```
+...nós os normalizamos para que fiquem entre 0 e 1. Assim, numa busca vetorial, um valor de 34.000,00 de um compra não distorce em relação a outros números tais como "hora do dia".
+
+#### Mais que raios é uma busca vetorial???
+
+Uma busca vetorial é simplesmente achar o que mais se parece em vez de buscar por igualdade exata. É uma busca por semelhança.
+
+#### Um exemplo passo-a-passo
+
+Vamos acompanhar uma transação do início ao fim — da chegada dos dados brutos até a decisão.
+
+**1. Constantes de normalização**
+
+Valores de referência que definem o "teto" de cada dimensão:
+```json
+{
+  "max_amount": 10000,
+  "max_hour":   23,
+  "max_avg":    5000
+}
+```
+
+**2. Chega uma nova transação (dados brutos)**
+
+```
+Valor da transação:            R$ 8.200,00
+Hora do dia:                   22h
+Média histórica do portador:   R$ 4.800,00
+```
+
+**3. Normalização — cada campo vira um número entre 0.0 e 1.0**
+
+```
+dim1 = 8200 / 10000 = 0.82
+dim2 = 22   / 23    = 0.96
+dim3 = 4800 / 5000  = 0.96
+```
+
+Vetor de consulta resultante:
+```
+[0.82, 0.96, 0.96]
+```
+
+**4. Busca vetorial — calcular a distância até cada referência**
+
+Usando distância euclidiana (quanto menor, mais parecido):
+```
+dist(q, ref) = √( (q1-r1)² + (q2-r2)² + (q3-r3)² )
+```
+
+| # | vetor de referência       | label | distância até `[0.82, 0.96, 0.96]` |
+|---|---------------------------|-------|-------------------------------------|
+| 4 | [0.9708, 1.0000, 1.00]    | fraud | **0.161** ← mais perto              |
+| 2 | [0.5796, 0.9167, 1.00]    | fraud | **0.247**                           |
+| 5 | [0.4082, 1.0000, 1.00]    | fraud | **0.416**                           |
+| 3 | [0.0035, 0.1667, 0.05]    | legit | 1.458                               |
+| 1 | [0.0100, 0.0833, 0.05]    | legit | 1.501                               |
+| 6 | [0.0092, 0.0833, 0.05]    | legit | 1.501                               |
+
+**5. Os K=3 vizinhos mais próximos**
+
+```
+1º — ref 4 (fraud) — 0.161
+2º — ref 2 (fraud) — 0.247
+3º — ref 5 (fraud) — 0.416
+```
+
+**6. Votação por maioria**
+
+```
+fraud: 3 votos
+legit: 0 votos
+
+fraud_score = 3 / 3 = 1.0
+```
+
+**7. Decisão**
+
+Com threshold `0.6`:
+```
+fraud_score (1.0) >= threshold (0.6) → transação NEGADA
+```
+
+Resposta:
+```json
+{
+  "approved": false,
+  "fraud_score": 1.0
+}
+```
+
+**A intuição:** os três vizinhos mais próximos têm em comum *valor alto, horário tardio e portador de alto padrão* — exatamente o "formato" de transações marcadas como fraude no dataset. A busca vetorial não "entende" fraude; ela só encontra as transações passadas mais parecidas e deixa a maioria decidir.
+
+
+
 
 Nesta edição, o desafio é construir uma **API de detecção de fraude em transações financeiras** usando KNN (K-Nearest Neighbors).
 

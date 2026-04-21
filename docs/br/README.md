@@ -58,5 +58,11 @@ Aqui está uma sugestão de ordem para leitura da documentação da edição des
 - **[FAQ.md](./FAQ.md)** — Dúvidas recorrentes, armadilhas comuns, o que pode e não pode.
 
 ---
+## Pontos em aberto
+- Ambiente para os testes (testes ainda não estão sendo feitos)
+- Definição de datas de encerramento para submissões e resultados finais
+- Mecanismo para agregar a prévia dos resultados
+
+---
 
 [← README principal](../../README.md)

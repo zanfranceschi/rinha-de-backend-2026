@@ -1,92 +1,14 @@
-# Requisitos
+# Regras de detecção de fraude
 
-Esta seção descreve os requisitos funcionais que seu backend deve implementar. Vamos começar com os endpoints que sua API precisa expor – são apenas dois.
+Este documento define as **regras que traduzem uma transação em um vetor de detecção de fraude**: a vetorização (14 dimensões) e a normalização. A busca vetorial usa esse vetor para encontrar transações similares no dataset de referência e decidir se a nova transação é fraudulenta.
 
-
-## `GET /ready`
-
-Health check. Deve retornar `HTTP 2xx` quando a API estiver pronta para receber requisições e ser testada. Muito simples. 
+> Se você não sabe nem do que se trata uma busca vetorial, leia primeiro [BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md) — esse documento explica o conceito de forma didática com um exemplo super simplificado.
 
 
-## `POST /fraud-score`
-Esse é o endpoint para detecção de fraudes; é onde você tem que caprichar. O formato do payload é como o seguinte exemplo:
-```json
-{
-  "id": "tx-3576980410",
-  "transaction": {
-    "amount": 384.88,
-    "installments": 3,
-    "requested_at": "2026-03-11T20:23:35Z"
-  },
-  "customer": {
-    "avg_amount": 769.76,
-    "tx_count_24h": 3,
-    "known_merchants": ["MERC-009", "MERC-001", "MERC-001"]
-  },
-  "merchant": {
-    "id": "MERC-001",
-    "mcc": "5912",
-    "avg_amount": 298.95
-  },
-  "terminal": {
-    "is_online": false,
-    "card_present": true,
-    "km_from_home": 13.7090520965
-  },
-  "last_transaction": {
-    "timestamp": "2026-03-11T14:58:35Z",
-    "km_from_current": 18.8626479774
-  }
-}
-```
-
-### Campos da Requisição
-
-| Campo                           | Tipo       | Descrição |
-|---------------------------------|------------|-----------|
-| `id`                            | string     | Identificador da transação (ex.: `tx-1329056812`) |
-| `transaction.amount`            | number     | Valor da transação |
-| `transaction.installments`      | integer    | Número de parcelas |
-| `transaction.requested_at`      | string ISO | Timestamp UTC da requisição |
-| `customer.avg_amount`           | number     | Média histórica de gasto do portador |
-| `customer.tx_count_24h`         | integer    | Transações do portador nas últimas 24h |
-| `customer.known_merchants`      | string[]   | Comerciantes já utilizados pelo portador |
-| `merchant.id`                   | string     | Identificador do comerciante |
-| `merchant.mcc`                  | string     | MCC (Merchant Category Code) |
-| `merchant.avg_amount`           | number     | Ticket médio do comerciante |
-| `terminal.is_online`            | boolean    | Transação online (`true`) ou presencial (`false`) |
-| `terminal.card_present`         | boolean    | Cartão presente no terminal |
-| `terminal.km_from_home`         | number     | Distância (km) do endereço do portador |
-| `last_transaction`              | object \| `null` | Dados da transação anterior (pode ser `null`) |
-| `last_transaction.timestamp`    | string ISO | Timestamp UTC da transação anterior |
-| `last_transaction.km_from_current` | number  | Distância (km) entre a transação anterior e a atual |
-
-
-**A resposta deve ser como este exemplo:**
-```json
-{
-  "approved": false,
-  "fraud_score": 1.0
-}
-```
-
-*Você pode encontrar [vários exemplos da payloads aqui](/resources/example-payloads.json). Note que o arquivo contém um array de paylioads, mas os payloads no teste são individuais.*
-
----
-
-# A Lógica para Detecção de Fraude
-
-Vamos usar um exemplo simplificado para explicar a lógica de detecção de fraude. As dimensões corretas e a ordem dos valores no vetor são detalhadas ao final da explicação.
-
-A lógica do processamento é a seguinte:
-1. Transformar a transação do corpo da requisção que está em formato JSON para um vetor.
-1. Realizar uma busca vetorial nas [referências](/resources/references.json.gz) pelas 5 referências mais similares.
-1. Classificar a transação como fraudulenta ou legítima junto com seu score de fraude.
-
-Por exemplo:
+## Visão geral do fluxo
 
 ```
-1. recebe a requisção:
+1. recebe a requisição:
     {
         "amount": 10.00,
         "installments": 12,
@@ -115,12 +37,12 @@ Por exemplo:
     }
 ```
 
-*Você pode encontrar [vários exemplos de referências aqui](/resources/example-references.json). O arquivo [oficial de referências](/resources/references.json.gz) é muito grande, está comprimido e pode ser difícil dar uma olhada nele para entendê-lo.*
+> O exemplo acima é simplificado (4 dimensões) para ilustrar o fluxo. A especificação real usa **14 dimensões**, descritas abaixo.
 
-#### Detalhes para vetorização e normalização
+
+## As 14 dimensões do vetor
 
 As transações ([exemplos aqui](/resources/example-payloads.json)) precisam ser transformadas em vetores de 14 dimensões obedecendo a seguinte ordem e regras de normalização.
-
 
 | índice | dimensão                 | fórmula                                                                          |
 |-----|--------------------------|----------------------------------------------------------------------------------|
@@ -139,7 +61,12 @@ As transações ([exemplos aqui](/resources/example-payloads.json)) precisam ser
 | 12  | `mcc_risk`               | `mcc_risk.json[merchant.mcc]` (default `0.5`)                                    |
 | 13  | `merchant_avg_amount`    | `limitar(merchant.avg_amount / max_merchant_avg_amount)`                           |
 
-Alguns valores, como `max_amount` e `max_installments`, estão definidos no arquivo [normalization.json](/resources/normalization.json) que é uma tabela de normalização:
+A função `limitar(x)` restringe o valor ao intervalo `[0.0, 1.0]` (clamp).
+
+
+## Constantes de normalização
+
+Alguns valores, como `max_amount` e `max_installments`, estão definidos no arquivo [normalization.json](/resources/normalization.json):
 
 ```json
 {
@@ -153,11 +80,17 @@ Alguns valores, como `max_amount` e `max_installments`, estão definidos no arqu
 }
 ```
 
-#### Exemplos Práticos
+Para mais detalhes sobre os arquivos de referência (incluindo `mcc_risk.json` e `references.json.gz`), veja [DATASET.md](./DATASET.md).
 
-Os quatro exemplos abaixo ilustram fluxos completos. A busca pelos 5 vizinhos mais próximos entre as referências usa **distância euclidiana** sobre os vetores de 14 dimensões, mas você pode usar outros algoritmos de métrica de distância se preferir.
+## Exemplos práticos
 
-##### Exemplo 1 — Transação legítima (score: 0.0)
+Quatro exemplos completos do fluxo de detecção de fraude — do payload bruto até a resposta.
+
+> Pré-requisito: [API.md](./API.md) — formato do payload.
+
+A busca pelos 5 vizinhos mais próximos entre as referências usa **distância euclidiana** sobre os vetores de 14 dimensões, mas você pode usar outros algoritmos de métrica de distância se preferir.
+
+### Exemplo 1 — transação legítima (score: 0.0)
 
 ```
 1. recebe a requisição:
@@ -191,7 +124,7 @@ Os quatro exemplos abaixo ilustram fluxos completos. A busca pelos 5 vizinhos ma
     }
 ```
 
-##### Exemplo 2 — Transação fraudulenta (score: 1.0)
+### Exemplo 2 — transação fraudulenta (score: 1.0)
 
 ```
 1. recebe a requisição:
@@ -225,7 +158,7 @@ Os quatro exemplos abaixo ilustram fluxos completos. A busca pelos 5 vizinhos ma
     }
 ```
 
-##### Exemplo 3 — Transação limítrofe (score: 0.4)
+### Exemplo 3 — transação limítrofe (score: 0.4)
 
 ```
 1. recebe a requisição:
@@ -259,7 +192,7 @@ Os quatro exemplos abaixo ilustram fluxos completos. A busca pelos 5 vizinhos ma
     }
 ```
 
-##### Exemplo 4 — Transação fraudulenta sem `last_transaction` (score: 1.0)
+### Exemplo 4 — transação fraudulenta sem `last_transaction` (score: 1.0)
 
 ```
 1. recebe a requisição:

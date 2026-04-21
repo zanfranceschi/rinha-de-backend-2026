@@ -1,8 +1,8 @@
-# Rinha de Backend 2026 – Detecção de Fraude por Busca Vetorial!
+# Rinha de Backend 2026 – Detecção de fraude por busca vetorial!
 
 ## Sobre esta edição
 
-O desafio é construir uma **API de detecção de fraude em autorizações de cartão**. Sua API recebe uma transação, transforma-a em um vetor e usa **busca vetorial** contra um dataset de referência com transações já classificadas como fraudulentas ou legítimas para decidir se a transação deve ser aprovada ou negada junto com um score de fraude.
+O desafio é construir uma **API de detecção de fraude em autorizações de cartão**. Para cada transação, sua API faz uma **busca vetorial** num dataset com referências de transações e decide se aprova ou nega junto com um score de fraude.
 
 ```mermaid
 flowchart LR
@@ -18,7 +18,7 @@ flowchart LR
 O módulo destacado em verde é **o que você vai construir**.
 
 
-## O Básico do desafio
+## O básico do desafio
 
 1. A API recebe um `POST /fraud-score` com os dados da transação.
 1. Normaliza os campos em um vetor de 14 dimensões (valores entre `0.0` e `1.0`).
@@ -29,32 +29,40 @@ O módulo destacado em verde é **o que você vai construir**.
    { "approved": false, "fraud_score": 0.8 }
    ```
 
-**A arquitetura e restrições** é o clássico da Rinha de Backend: um load balancer com duas ou mais APIs e o perrengue de sempre com quase nada de CPU e memória – [confira aqui](./ARQUITETURA_E_RESTICOES.md).
+E mais o clássico da Rinha: um load balancer com duas ou mais APIs e o perrengue de sempre com quase nada de memória e ainda menos CPU.
 
 ---
 
-## O que mais você precisa saber / Próximos passos
+## Roteiro de leitura
 
-1. **[BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md)** — O que é busca vetorial, normalização e KNN, com exemplo passo-a-passo.
-   *Essencial se você nunca trabalhou com vetores ou KNN.*
+Aqui está uma sugestão de ordem para leitura da documentação da edição desse ano.
 
-1. **[DATASET.md](./DATASET.md)** — Formato dos arquivos de referência (`references.json`, `mcc_risk.json`, `normalization.json`) e as 14 dimensões do vetor.
-   *Para entender como transformar o payload em vetor.*
+### 1. O que você precisa construir
 
-1. **[API.md](./API.md)** — Contrato dos endpoints (`POST /fraud-score`, `GET /ready`), formato do payload e da resposta.
-   *Essencial — é o que sua submissão precisa implementar.*
+- **[API.md](./API.md)** — Contrato da API que precisa ser construída (`POST /fraud-score`, `GET /ready`).
+- **[ARQUITETURA.md](./ARQUITETURA.md)** — Limites de CPU/memória, arquitetura mímina, conteineriezação.
 
-1. **[ARQUITETURA_E_RESTICOES.md](./ARQUITETURA_E_RESTICOES.md)** — Limites de CPU/memória, docker-compose, nginx, portas, stateless.
-   *Antes de montar o container de submissão.*
+### 2. Como funciona a detecção de fraude
 
-1. **[AVALIACAO.md](./AVALIACAO.md)** — Fórmula de pontuação, peso de FP/FN, multiplicador de latência, como rodar o teste local.
-   *Para otimizar sua pontuação.*
+- **[REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md)** — **As regras que definem a detecção de fraude**: as 14 dimensões do vetor, fórmulas de normalização, como cada campo do payload deve ser tratado para a busca vetorial e exemplos completos do fluxo. *A especificação do que você precisa implementar.*
+- **[BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md)** — O que é uma busca vetorial, com exemplos passo-a-passo. *Essencial se você nunca trabalhou com vetores.*
 
-1. **[SUBMISSAO.md](./SUBMISSAO.md)** — Passo-a-passo do PR, checklist e data limite.
-   *Quando estiver pronto para submeter.*
+### 3. Os dados
 
-1. **[FAQ.md](./FAQ.md)** — Dúvidas recorrentes, armadilhas comuns, o que pode e não pode.
+- **[DATASET.md](./DATASET.md)** — Formato dos arquivos de referência (`references.json.gz`, `mcc_risk.json`, `normalization.json`).
+
+### 4. Participação e avaliação
+
+- **[SUBMISSAO.md](./SUBMISSAO.md)** — Passo-a-passo do PR, branches (`main` e `submission`), como abrir a issue `rinha/test`.
+- **[AVALIACAO.md](./AVALIACAO.md)** — Fórmula de pontuação, peso de FP/FN, multiplicador de latência, como rodar o teste local.
+- **[FAQ.md](./FAQ.md)** — Dúvidas recorrentes, armadilhas comuns, o que pode e não pode.
+
+---
+## Pontos em aberto
+- Ambiente para os testes (testes ainda não estão sendo feitos)
+- Definição de datas de encerramento para submissões e resultados finais
+- Mecanismo para agregar a prévia dos resultados
 
 ---
 
-Para o sumário geral, volte ao [README principal](../../README.md).
+[← README principal](../../README.md)

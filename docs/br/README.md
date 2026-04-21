@@ -18,7 +18,7 @@ flowchart LR
 O módulo destacado em verde é **o que você vai construir**.
 
 
-## O Básico do desafio
+## O básico do desafio
 
 1. A API recebe um `POST /fraud-score` com os dados da transação.
 1. Normaliza os campos em um vetor de 14 dimensões (valores entre `0.0` e `1.0`).
@@ -29,31 +29,34 @@ O módulo destacado em verde é **o que você vai construir**.
    { "approved": false, "fraud_score": 0.8 }
    ```
 
-**A arquitetura e restrições** é o clássico da Rinha de Backend: um load balancer com duas ou mais APIs e o perrengue de sempre com quase nada de CPU e memória – [confira aqui](./ARQUITETURA_E_RESTICOES.md).
+E o clássico da Rinha: um load balancer com duas ou mais APIs e o perrengue de sempre com quase nada de CPU e memória.
 
 ---
 
-## O que mais você precisa saber / Próximos passos
+## Roteiro de leitura
 
-1. **[BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md)** — O que é busca vetorial, normalização e KNN, com exemplo passo-a-passo.
-   *Essencial se você nunca trabalhou com vetores ou KNN.*
+A documentação está organizada em quatro grandes blocos. Siga na ordem se for sua primeira leitura.
 
-1. **[DATASET.md](./DATASET.md)** — Formato dos arquivos de referência (`references.json`, `mcc_risk.json`, `normalization.json`) e as 14 dimensões do vetor.
-   *Para entender como transformar o payload em vetor.*
+### 1. O que você precisa construir
 
-1. **[API.md](./API.md)** — Contrato dos endpoints (`POST /fraud-score`, `GET /ready`), formato do payload e da resposta.
-   *Essencial — é o que sua submissão precisa implementar.*
+- **[API.md](./API.md)** — Contrato dos endpoints (`POST /fraud-score`, `GET /ready`), formato do payload e da resposta.
+- **[ARQUITETURA.md](./ARQUITETURA.md)** — Limites de CPU/memória, docker-compose, nginx, porta 9999, stateless.
 
-1. **[ARQUITETURA_E_RESTICOES.md](./ARQUITETURA_E_RESTICOES.md)** — Limites de CPU/memória, docker-compose, nginx, portas, stateless.
-   *Antes de montar o container de submissão.*
+### 2. Como funciona a detecção
 
-1. **[AVALIACAO.md](./AVALIACAO.md)** — Fórmula de pontuação, peso de FP/FN, multiplicador de latência, como rodar o teste local.
-   *Para otimizar sua pontuação.*
+- **[BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md)** — O que é busca vetorial e KNN, com exemplo passo-a-passo. *Essencial se você nunca trabalhou com vetores.*
+- **[VETORIZACAO.md](./VETORIZACAO.md)** — As 14 dimensões do vetor, fórmulas e constantes de normalização. *A especificação exata que você precisa implementar.*
+- **[EXEMPLOS.md](./EXEMPLOS.md)** — Quatro fluxos completos do payload bruto até a resposta.
 
-1. **[SUBMISSAO.md](./SUBMISSAO.md)** — Passo-a-passo do PR, checklist e data limite.
-   *Quando estiver pronto para submeter.*
+### 3. Os dados
 
-1. **[FAQ.md](./FAQ.md)** — Dúvidas recorrentes, armadilhas comuns, o que pode e não pode.
+- **[DATASET.md](./DATASET.md)** — Formato dos arquivos de referência (`references.json.gz`, `mcc_risk.json`, `normalization.json`).
+
+### 4. Participação e avaliação
+
+- **[SUBMISSAO.md](./SUBMISSAO.md)** — Passo-a-passo do PR, branches (`main` e `submission`), como abrir a issue `rinha/test`.
+- **[AVALIACAO.md](./AVALIACAO.md)** — Fórmula de pontuação, peso de FP/FN, multiplicador de latência, como rodar o teste local.
+- **[FAQ.md](./FAQ.md)** — Dúvidas recorrentes, armadilhas comuns, o que pode e não pode.
 
 ---
 

@@ -1,4 +1,4 @@
-# Busca Vetorial — Explicação Didática
+# Busca Vetorial — Uma Introdução
 
 Este documento explica, passo-a-passo, como funciona uma **busca vetorial** no contexto da detecção de fraude desta edição da Rinha.
 
@@ -18,7 +18,7 @@ Se as transações mais parecidas foram classificadas como fraude, provavelmente
 
 ## Exemplo passo-a-passo
 
-Vamos acompanhar uma transação do início ao fim — da chegada dos dados brutos até a decisão.
+Vamos acompanhar uma transação do início ao fim — do payload recebido até a decisão.
 
 ### 1. Constantes de normalização
 
@@ -32,20 +32,22 @@ Valores de referência que definem o "teto" de cada dimensão:
 }
 ```
 
-### 2. Chega uma nova transação (dados brutos)
+### 2. Chega uma nova transação
 
-```
-Valor da transação:            R$ 8.200,00
-Hora do dia:                   22h
-Média histórica do portador:   R$ 4.800,00
+```json
+{
+  "amount": 8200.00,
+  "hour": 22,
+  "customer_avg_amount": 4800.00
+}
 ```
 
 ### 3. Normalização — cada campo vira um número entre 0.0 e 1.0
 
 ```
-dim1 = 8200 / 10000 = 0.82
-dim2 = 22   / 23    = 0.96
-dim3 = 4800 / 5000  = 0.96
+dim1 = amount              / max_amount = 8200 / 10000 = 0.82
+dim2 = hour                / max_hour   = 22   / 23    = 0.96
+dim3 = customer_avg_amount / max_avg    = 4800 / 5000  = 0.96
 ```
 
 Vetor de consulta resultante:
@@ -128,24 +130,32 @@ Os três vizinhos mais próximos têm em comum *valor alto, horário tardio e po
 
 A busca vetorial **não "entende" fraude** — ela apenas encontra as transações passadas mais parecidas e deixa a maioria decidir o rótulo da nova.
 
+---
 
+## Métricas de distância e algoritmos de busca
+
+O exemplo acima usa **distância euclidiana**, mas ela é apenas uma das opções para medir "quão parecidos são dois vetores". As mais comuns:
+
+- **Euclidiana** — `√Σ(qᵢ - rᵢ)²`. A "distância em linha reta" no espaço. Intuitiva e a mais usada como ponto de partida.
+- **Manhattan** (L1) — `Σ|qᵢ - rᵢ|`. Soma das diferenças absolutas. Mais barata de calcular (sem raiz nem multiplicação) e penaliza outliers de forma mais suave.
+- **Cosseno** — compara o **ângulo** entre os vetores, não o tamanho. Útil quando você se importa com a "direção" do vetor mais do que com a magnitude (textos, embeddings, etc.).
+
+Para o problema desta Rinha, qualquer uma funciona — o que importa é a consistência: o vetor de consulta e os vetores de referência precisam estar no mesmo espaço normalizado.
+
+### KNN exato vs ANN (Approximate Nearest Neighbors)
+
+A forma mais simples de achar os K vizinhos mais próximos é o **KNN exato**: percorrer todas as referências, calcular a distância para cada uma e ordenar. Funciona, mas custa O(N) por consulta — com 100k referências e um orçamento de latência apertado, pode ser caro demais.
+
+**ANN** é a alternativa: estruturas de dados que sacrificam um pouquinho de precisão para responder em tempo sub-linear. Algumas famílias:
+
+- **HNSW** (Hierarchical Navigable Small World) — grafo em camadas, é o que pgvector, Qdrant e a maioria dos bancos vetoriais usam por padrão.
+- **IVF** (Inverted File Index) — particiona o espaço em "células" e busca apenas nas mais próximas da consulta.
+- **LSH** (Locality-Sensitive Hashing) — funções de hash que colidem para vetores parecidos.
+
+Você pode usar **brute force em memória, KNN exato com índice espacial, ANN, banco vetorial pronto** ou qualquer combinação. O desafio avalia a qualidade da resposta (`approved`) e a latência — a estratégia é com você.
 
 ---
 
-Não, é impreciso. Há duas coisas distintas acontecendo:
+## Próximo passo
 
-1. Geração dos payloads (o request em si):
-Feita por gen_request() usando PRNG (PCG32) + regras por perfil (LEGIT/FRAUD/BORDERLINE) em main.c:272-391. Cada campo (amount, mcc, km_home, etc.) é sorteado dentro de faixas determinadas pelo perfil. KNN não participa disso.
-
-2. Rotulagem dos payloads (expected_response):
-Aí sim — knn_classify() usa KNN (k=5) com euclidiana para atribuir approved e fraud_score comparando o vetor normalizado do payload contra as referências.
-
-Formulação tecnicamente correta:
-
-Os payloads são gerados sinteticamente via PRNG com perfis rotulados (legit/fraud/borderline), e suas respostas esperadas são rotuladas por KNN (k=5) com distância euclidiana contra um conjunto de vetores de referência de 14 dimensões.
-
-A diferença importa porque:
-
-Trocar o PRNG/perfis muda a distribuição dos dados.
-Trocar KNN/euclidiana muda apenas a função de rotulagem (o ground truth).
-São eixos independentes.
+Este documento usa um exemplo simplificado (3 dimensões) só para fins didáticos. A especificação real do desafio usa **14 dimensões**, descritas em [VETORIZACAO.md](./VETORIZACAO.md), e exemplos completos estão em [EXEMPLOS.md](./EXEMPLOS.md).

@@ -29,9 +29,9 @@ Note que esse arquivo contém um array para que você possa submeter mais de um 
 }]
 ```
 
-O nome do arquivo deve ser exatamente o nome do seu usuário no github.com e dentro do diretório [./participants](./participants). Por exemplo: `./participants/ana.json`. Obviamente, seu repositório deve ser público!
+O nome do arquivo deve ser exatamente como o nome do seu usuário no github.com e dentro do diretório [./participants](./participants). Por exemplo: `./participants/ana.json`. Obviamente, seu repositório git deve ser público!
 
-## Estrutura do Repositório
+## Estrutura do repositório
 
 Seu repositório **PRECISA** conter no mímino duas branches:
 - A branch principal – geralmente chamada `main` – contendo o código fonte do seu backend.
@@ -55,9 +55,11 @@ Exemplo de estrutura de diretórios por branch:
 └── init.sql
 ```
 
-## Execução do Teste
+## Execução do teste
 
-Para que seu backend de fato passe pelo teste, é necessário abrir uma [issue](https://github.com/zanfranceschi/rinha-de-backend-2026/issues) colocando `rinha/test` na descrição. Se você tiver mais de uma submissão, informe também o `id` – por exemplo, `rinha/test ana-experimental`. Essa edição da Rinha de Backend conta com uma engine que varre as issues abertas com essa descrição, executa os testes, posta o resultado dos testes (ou erro) em forma de comentário e fecha a issue. Para submeter seu backend a um novo teste, basta reabrir a mesma issue ou abrir uma nova. É recomendado que reabra a mesma issue para que as comparações fiquem mais fáceis de serem feitas com versões anteriores do seu backend.
+Para que seu backend de fato passe pelo teste, é necessário abrir uma [issue](https://github.com/zanfranceschi/rinha-de-backend-2026/issues) colocando `rinha/test` na descrição. Se você tiver mais de uma submissão, informe também o `id` – por exemplo, `rinha/test ana-experimental`.
+
+Essa edição da Rinha de Backend conta com uma engine que varre as issues abertas com essa descrição, executa os testes, posta o resultado dos testes (ou erro) em forma de comentário e fecha a issue. Para submeter seu backend a um novo teste, basta reabrir a issue ou abrir uma nova. É recomendado que reabra a mesma issue para que as comparações fiquem mais fáceis de serem feitas com versões anteriores do seu backend.
 
 ![alt text](open-issue.png)
 

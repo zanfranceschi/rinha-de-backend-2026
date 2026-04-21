@@ -1,4 +1,4 @@
-# Rinha de Backend 2026 – Fraud Detection
+# Rinha de Backend 2026 – Fraud detection
 
 ![cover](/misc/cover.png)
 

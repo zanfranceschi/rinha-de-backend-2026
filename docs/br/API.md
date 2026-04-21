@@ -42,7 +42,7 @@ Esse é o endpoint para detecção de fraudes; é onde você tem que caprichar. 
 }
 ```
 
-### Campos da Requisição
+### Campos da requisição
 
 | Campo                           | Tipo       | Descrição |
 |---------------------------------|------------|-----------|
@@ -83,5 +83,4 @@ A resposta deve ser como este exemplo:
 A lógica de detecção (vetorização + busca vetorial + KNN) está descrita em:
 
 - **[BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md)** — explicação didática do conceito.
-- **[VETORIZACAO.md](./VETORIZACAO.md)** — especificação exata das 14 dimensões e normalização.
-- **[EXEMPLOS.md](./EXEMPLOS.md)** — quatro fluxos completos do payload à resposta.
+- **[REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md)** — especificação exata das 14 dimensões, normalização e exemplos completos do fluxo.

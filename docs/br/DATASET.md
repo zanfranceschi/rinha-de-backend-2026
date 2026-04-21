@@ -1,4 +1,4 @@
-# Dataset — Arquivos de Referência
+# Dataset — arquivos de referência
 
 Três arquivos são fornecidos aos participantes e são necessários para decidir se as transações são ou não fraudulentas.
 
@@ -11,7 +11,7 @@ Três arquivos são fornecidos aos participantes e são necessários para decidi
 
 ## `references.json.gz` — vetores de referência rotulados
 
-O dataset principal contra o qual sua busca vetorial é executada. Cada registro tem dois campos: `vector` (14 dimensões na ordem definida em [VETORIZACAO.md](./VETORIZACAO.md)) e `label` (`"fraud"` ou `"legit"`).
+O dataset principal contra o qual sua busca vetorial é executada. Cada registro tem dois campos: `vector` (14 dimensões na ordem definida em [REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md)) e `label` (`"fraud"` ou `"legit"`).
 
 ```json
 [
@@ -53,7 +53,7 @@ Conteúdo completo do arquivo:
 
 ## `normalization.json` — constantes de normalização
 
-As constantes usadas nas fórmulas de [VETORIZACAO.md](./VETORIZACAO.md). Conteúdo completo:
+As constantes usadas nas fórmulas de [REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md). Conteúdo completo:
 
 ```json
 {

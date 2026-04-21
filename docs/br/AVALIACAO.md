@@ -1,8 +1,8 @@
-# Avaliação e Pontuação
+# Avaliação e pontuação
 
 Como sua submissão será avaliada.
 
-## Teste de Carga
+## Teste de carga
 
 O teste de carga usa o [k6](https://k6.io/) num cenário incremental super simples de requisições. O script para o teste está localizado em [test](/test) junto com sua massa de dados (requisições que serão feitas). É importante notar que o script disponibilizado aqui serve para que você execute seus próprios testes e pode não ser a versão final do teste :)
 
@@ -10,24 +10,29 @@ Siga as [instruções oficiais](https://grafana.com/docs/k6/latest/) para execut
 
 As instruções para que seu backend seja de fato testado, estão [descritas aqui](/docs/br/SUBMISSAO.md) sob a seção **Execução do Teste**.
 
-## Métricas Coletadas
+> O script disponibilizado aqui serve para você executar seus próprios testes e pode não ser exatamente a versão final do teste oficial para um fator surpresa adicional.
 
-Para cada requisição, a resposta `approved` é comparada com o gabarito:
+## O que é testado
 
-- **TP (True Positive)** — fraude corretamente negada
-- **TN (True Negative)** — transação legítima corretamente aprovada
-- **FP (False Positive)** — legítima incorretamente negada
-- **FN (False Negative)** — fraude incorretamente aprovada
-- **Error** — HTTP non-200
+O teste usa [payloads existentes](/test/test-data.json) previamente rotulados com base nas [referências](/resources/references.json.gz). Essa rotulagem prévia foi feita aplicando **k-NN com k=5 e distância euclidiana** sobre os vetores de 14 dimensões. Isso significa que para cada requisição existe uma resposta correta esperada sobre a transação ser fraude ou legítima. Mas isso não te obriga a usar KNN e distância euclidiana para a busca vetorial, vocẽ pode usar outras métricas de distância (geralmente, ao preço da perda de um pouco de precisão nas detecções).
 
-## Fórmula de Pontuação
+## Métricas coletadas
+
+Para cada requisição, a resposta `approved: true|false` é comparada e pontuada com o seguinte:
+
+- **TP (True Positive)** — fraude corretamente negada (1 ponto)
+- **TN (True Negative)** — transação legítima corretamente aprovada (1 ponto)
+- **FP (False Positive)** — legítima incorretamente negada (-1 ponto)
+- **FN (False Negative)** — fraude incorretamente aprovada (-3 pontos)
+- **Error** — erro HTTP (-5 pontos)
+
+## Fórmula da pontuação
 
 ```
-raw_score    = (TP × 1) + (TN × 1) + (FP × -1) + (FN × -3) + (Error × -5)
-latency_mult = TARGET_P99_MS / max(p99, TARGET_P99_MS)
-final_score  = max(0, raw_score) × latency_mult
+precisao               = (TP × 1) + (TN × 1) + (FP × -1) + (FN × -3) + (Error × -5)
+multiplicador_latencia = TARGET_P99_MS / max(p99, TARGET_P99_MS)
+pontuacao_final        = max(0, precisao) × multiplicador_latencia
 ```
-
 **TARGET_P99_MS = 10ms.**
 
 ## Pesos — por que assim
@@ -36,34 +41,9 @@ final_score  = max(0, raw_score) × latency_mult
 - **Error vale -5** — indisponibilidade é o pior dos mundos
 - **Latência multiplica o score** — uma API lenta mas precisa perde para uma rápida e precisa
 
-## Rodando o teste localmente
+## Interpretando o resultado dos testes
 
-**Pré-requisitos:** [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/) e `jq` instalados. Se você usa Nix, o [`shell.nix`](/shell.nix) já cobre. Os arquivos [`test/test-data.json`](/test/test-data.json) e [`resources/references.json.gz`](/resources/references.json.gz) já vêm no repositório — não precisa gerar nada.
-
-**Passos:**
-
-1. Suba seu backend de forma que ele responda na porta `9999` (geralmente `docker compose up`).
-2. Aguarde o [`GET /ready`](./API.md) retornar `2xx`.
-3. Da raiz do repositório, rode:
-
-   ```bash
-   ./run.sh
-   ```
-
-   O script chama `k6 run test/test.js`, gera o `test/results.json` e imprime no stdout.
-
-**Perfil de carga.** O cenário usa `ramping-arrival-rate` (RPS-based) com 4 estágios — pico de **650 req/s**, duração total de ~60s:
-
-| Estágio | Duração | RPS alvo |
-|---|---|---|
-| 1 | 10s | 1 → 10 |
-| 2 | 10s | 10 → 50 |
-| 3 | 20s | 50 → 350 |
-| 4 | 20s | 350 → 650 |
-
-> O script disponibilizado aqui serve para você executar seus próprios testes e pode não ser exatamente a versão final do teste oficial.
-
-**Interpretando o `results.json`:**
+Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se seu teste foi executado pela Engine da Einha (via abertura de issue), o comentário com o resultado do teste conterá o seguinte JSON:
 
 ```json
 {
@@ -86,29 +66,21 @@ final_score  = max(0, raw_score) × latency_mult
 }
 ```
 
-- `breakdown` — contagens brutas de TP, TN, FP, FN e erros.
+- `breakdown` — contagens de TP, TN, FP, FN e erros http.
 - `detection_accuracy` — `(TP + TN) / total_classificadas`. Apenas informativo, não entra na pontuação.
 - `latency_multiplier` — `1.0` quando `p99 ≤ 10ms`; cai linearmente a partir daí (`10/p99`).
-- `raw_score` — antes do multiplicador de latência.
-- `final_score` — o número que importa.
+- `raw_score` — pontos para precisão, antes do multiplicador de latência.
+- `final_score` — o número que importa, a pontuação final.
 
 
 ## Estratégias (dicas)
 
-Algumas observações úteis para tirar nota — mas a estratégia é sua.
+Algumas observações que podem ser úteis.
 
-**O multiplicador de latência é cruel.** `p99 = 10ms` mantém 100% do `raw_score`. `p99 = 20ms` corta pela metade. `p99 = 100ms` zera 90% do esforço. Em geral, perder um pouquinho de acurácia para ganhar muita latência costuma compensar.
+**O multiplicador de latência é cruel.** `p99 <= 10ms` mantém 100% do `raw_score`. `p99 = 20ms` corta pela metade. `p99 = 100ms` acaba com 90% do esforço. Em geral, perder um pouquinho de precisão para melhorar a latência pode compensar.
 
-**Erro custa 5×.** Nunca devolva 5xx ou estoure timeout. Se sua busca demorar demais por algum motivo, vale **devolver uma resposta qualquer** rápido (ex.: classificar como `approved: true` com `fraud_score: 0.0`) em vez de errar — `-1` (FP) ou `-3` (FN) machucam menos que `-5` (Error).
+**Erros HTTP custam 5×.** Tente nunca retornar HTTP 5xx ou estourar timeout. Se sua busca demorar demais por algum motivo, vale **devolver uma resposta qualquer** rápida (ex.: classificar como `approved: true` com `fraud_score: 0.0`) em vez de errar — `-1` (FP) ou `-3` (FN) dói menos que `-5` (Error).
 
-**FN vs FP é assimétrico.** Falso negativo vale `-3`, falso positivo vale `-1`. Com a distribuição do dataset (~33% fraude), isso significa que **ser mais agressivo em negar costuma compensar**: se o threshold padrão é `0.6`, valores menores (ex.: `0.5` ou `0.4`) tendem a aumentar o `raw_score` total — mas o ponto ótimo depende do quanto seu classificador erra em cada faixa.
+**Quando ANN vale a pena.** Brute force em 100k vetores × 14 dimensões por consulta pode ficar muito caro computacionalmente. Adotar ANN (HNSW, IVF) ou um banco vetorial pronto pode te ajudar. Mas sempre meça antes de complicar!
 
-**O threshold é seu, não nosso.** O `0.6` é só uma sugestão — só `approved` é avaliado. Você pode:
-- usar threshold diferente,
-- ponderar os vizinhos por distância em vez de votação simples,
-- mudar `K` (não precisa ser 5),
-- aplicar qualquer decisão sobre os vizinhos retornados pela busca vetorial.
-
-**Quando ANN vale a pena.** Brute force exato em 100k vetores × 14 dimensões = 1,4M operações por consulta. Em linguagens compiladas com SIMD (C, Rust, Go com `unsafe`) isso roda em ~100µs e basta. Em runtimes mais lentos (Python puro, Node sem add-on nativo), o p99 explode rápido em 650 RPS — aí ANN (HNSW, IVF) ou um banco vetorial pronto começa a fazer sentido. **Meça antes de complicar.**
-
-**Os arquivos não mudam durante o teste.** Pré-processe à vontade no startup ou no build do container — quanto mais trabalho você empurra para fora do hot path, melhor o `p99`.
+**Os arquivos de referência não mudam durante o teste.** Pré-processe à vontade no startup ou no build do container — quanto mais processamento você tira para fora do teste, melhor o `p99`.

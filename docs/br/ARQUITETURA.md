@@ -1,4 +1,4 @@
-# Arquitetura e Restrições
+# Arquitetura e restrições
 
 ## Topologia
 
@@ -32,9 +32,9 @@ services:
 
 A conteinerização precisa estar disponível na branch `submission`, como [descrito aqui](./SUBMISSAO.md). 
 
-## A Porta 9999
+## A porta 9999
 
-Os dois endpoints do seu backend (`POST /fraud-score` e `GET /ready`) precisam estar expostos/disponíveis na porta **9999**. Ou seja, o load balancer da sua solução precisa responder às requisições nessa porta.
+Seu backend precisam responder na porta **9999**. Ou seja, o load balancer da sua solução precisa responder às requisições nessa porta.
 
 **Outas restrições**
 - As imagens devem ser compatíveis com linux-amd64 (especialmente importante para quem usa Mac com processadores ARM64 - [referência](https://docs.docker.com/build/building/multi-platform/)).

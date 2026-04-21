@@ -43,7 +43,7 @@ pontuacao_final        = max(0, precisao) × multiplicador_latencia
 
 ## Interpretando o resultado dos testes
 
-Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se seu teste foi executado pela Engine da Einha (via abertura de issue), o comentário com o resultado do teste conterá o seguinte JSON:
+Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se seu teste foi executado pela Engine da Rinha (via abertura de issue), o comentário com o resultado do teste conterá o seguinte JSON:
 
 ```json
 {

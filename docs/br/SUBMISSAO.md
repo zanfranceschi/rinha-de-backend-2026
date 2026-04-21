@@ -64,6 +64,15 @@ Essa edição da Rinha de Backend conta com uma engine que varre as issues abert
 ![alt text](open-issue.png)
 
 
+#### Especificações do ambiente de testes
+
+Essa ano a Rinha está usando um [Mac Mini Late 2014 Edition](https://support.apple.com/en-us/111931) com Ubuntu 24.04 instalado.
+
+Versão do Mac Mini:
+- 2.6GHz
+- 8GB de RAM
+- 1TB de Storage
+
 ## Data limite
 
 A data limite para submissão ainda não está definida.

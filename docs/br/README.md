@@ -59,7 +59,6 @@ Aqui está uma sugestão de ordem para leitura da documentação da edição des
 
 ---
 ## Pontos em aberto
-- Ambiente para os testes (testes ainda não estão sendo feitos)
 - Definição de datas de encerramento para submissões e resultados finais
 - Mecanismo para agregar a prévia dos resultados
 

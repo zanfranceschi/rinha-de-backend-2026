@@ -64,6 +64,15 @@ This Rinha de Backend edition has an engine that scans open issues with this des
 ![alt text](../br/open-issue.png)
 
 
+#### Test environment specifications
+
+This year Rinha is using a [Mac Mini Late 2014 Edition](https://support.apple.com/en-us/111931) running Ubuntu 24.04.
+
+Mac Mini specs:
+- 2.6GHz
+- 8GB of RAM
+- 1TB of Storage
+
 ## Deadline
 
 The submission deadline has not been defined yet.

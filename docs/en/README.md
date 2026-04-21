@@ -59,7 +59,6 @@ Here's a suggested reading order for this year's documentation.
 
 ---
 ## Open points
-- Environment for the tests (tests are not yet being run)
 - Definition of deadlines for submissions and final results
 - Mechanism to aggregate the preview of results
 

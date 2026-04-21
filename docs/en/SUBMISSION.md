@@ -52,8 +52,25 @@ Example directory structure per branch:
 # submission branch
 ├── docker-compose.yml
 ├── nginx.conf
+├── info.json
 └── init.sql
 ```
+
+Note that having the `docker-compose.yml` file at the root of the `submission` branch is essential. Otherwise, it won't be possible to run the test for your backend.
+
+Please also add an `info.json` file with the following fields so we can analyze the most used technologies in this edition of Rinha and reach you if needed to announce a win, make a referral, etc.
+
+```json
+{
+    "participants": ["José Alves", "Ana Zanfranceschi"],
+    "social": ["https://github.com/ja/", "https://www.linkedin.com/in/anazan"],
+    "source-code-repo": "https://github.com/100f/rinha-backend-2025",
+    "stack": ["java", "postgres", "nginx", "redis"],
+    "open_to_work": true    
+}
+```
+About the **open_to_work** field: Rinha has already helped many people professionally! So, to let people know you're looking for new opportunities, set this field to `true`.
+
 
 ## Test Execution
 

@@ -52,8 +52,25 @@ Exemplo de estrutura de diretórios por branch:
 # branch submission
 ├── docker-compose.yml
 ├── nginx.conf
+├── info.json
 └── init.sql
 ```
+
+Note que é essencial haver o arquivo `docker-compose.yml` na raiz da branch `submission`. Caso contrário, não será possível executar o teste do seu backend.
+
+Por favor, também adicione um arquivo `info.json` com os seguintes campos para que consigamos analisar as tecnologias mais usadas nessa edição da rinha e encontrar você caso necessário para anunciar uma vitória, fazer uma indicação, etc.
+
+```json
+{
+    "participants": ["José Alves", "Ana Zanfranceschi"],
+    "social": ["https://github.com/ja/", "https://www.linkedin.com/in/anazan"],
+    "source-code-repo": "https://github.com/100f/rinha-backend-2025",
+    "stack": ["java", "postgres", "nginx", "redis"],
+    "open_to_work": true    
+}
+```
+Sobre o campo **open_to_work**: A Rinha já ajudou muita gente profissionalmente! Então, para que as pessoas saibam que você está em busca de novas oportunidades, defina esse campo para `true`.
+
 
 ## Execução do teste
 

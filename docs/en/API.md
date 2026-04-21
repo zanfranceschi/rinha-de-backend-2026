@@ -82,5 +82,7 @@ The response must look like this example:
 
 The detection logic (vectorization + vector search) is described in:
 
-- **[VECTOR_SEARCH.md](./VECTOR_SEARCH.md)** — didactic explanation of the concept.
 - **[DETECTION_RULES.md](./DETECTION_RULES.md)** — exact specification of the 14 dimensions, normalization, and complete flow examples.
+
+- **[VECTOR_SEARCH.md](./VECTOR_SEARCH.md)** — didactic explanation of the concept.
+

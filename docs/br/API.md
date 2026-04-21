@@ -82,5 +82,7 @@ A resposta deve ser como este exemplo:
 
 A lógica de detecção (vetorização + busca vetorial) está descrita em:
 
-- **[BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md)** — explicação didática do conceito.
 - **[REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md)** — especificação exata das 14 dimensões, normalização e exemplos completos do fluxo.
+
+- **[BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md)** — explicação didática do conceito.
+

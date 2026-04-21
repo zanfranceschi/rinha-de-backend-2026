@@ -6,6 +6,7 @@ This document defines the **rules that translate a transaction into a fraud dete
 
 
 ## Flow overview
+The flow below shows a **simplified example** (without the 14 dimensions) of the step-by-step you should follow to implement the fraud detection.
 
 ```
 1. receives the request:
@@ -36,9 +37,6 @@ This document defines the **rules that translate a transaction into a fraud dete
         "fraud_score": 0.4
     }
 ```
-
-> The example above is simplified (4 dimensions) to illustrate the flow. The actual specification uses **14 dimensions**, described below.
-
 
 ## The 14 vector dimensions
 
@@ -84,7 +82,7 @@ For more details about the reference files (including `mcc_risk.json` and `refer
 
 ## Practical examples
 
-Four complete examples of the fraud detection flow — from the raw payload to the response.
+Four complete examples of the fraud detection flow — from the payload to the response.
 
 > Prerequisite: [API.md](./API.md) — payload format.
 

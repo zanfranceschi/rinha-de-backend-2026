@@ -6,6 +6,7 @@ Este documento define as **regras que traduzem uma transação em um vetor de de
 
 
 ## Visão geral do fluxo
+O fluxo a seguir mostra um **exemplo simplificado** (sem as 14 dimensões) do passo a passo que você deve fazer para implementar a detecção de fraude.
 
 ```
 1. recebe a requisição:
@@ -37,12 +38,9 @@ Este documento define as **regras que traduzem uma transação em um vetor de de
     }
 ```
 
-> O exemplo acima é simplificado (4 dimensões) para ilustrar o fluxo. A especificação real usa **14 dimensões**, descritas abaixo.
-
-
 ## As 14 dimensões do vetor
 
-As transações ([exemplos aqui](/resources/example-payloads.json)) precisam ser transformadas em vetores de 14 dimensões obedecendo a seguinte ordem e regras de normalização.
+As transações ([exemplos realistas aqui](/resources/example-payloads.json)) precisam ser transformadas em vetores de 14 dimensões obedecendo a seguinte ordem e regras de normalização.
 
 | índice | dimensão                 | fórmula                                                                          |
 |-----|--------------------------|----------------------------------------------------------------------------------|
@@ -84,7 +82,7 @@ Para mais detalhes sobre os arquivos de referência (incluindo `mcc_risk.json` e
 
 ## Exemplos práticos
 
-Quatro exemplos completos do fluxo de detecção de fraude — do payload bruto até a resposta.
+Quatro exemplos completos do fluxo de detecção de fraude — do payload até a resposta.
 
 > Pré-requisito: [API.md](./API.md) — formato do payload.
 

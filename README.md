@@ -16,7 +16,7 @@
 
 A **Rinha de Backend** é uma competição amistosa em que desenvolvedores constroem backends sob restrições agressivas de CPU e memória. Cada edição traz um tema diferente — e o desta vez é **detecção de fraude em transações de cartão usando busca vetorial**.
 
-📖 **Documentação completa do desafio:** [**docs/br/README.md**](./docs/br/README.md)
+**Documentação completa do desafio:** [**docs/br/README.md**](./docs/br/README.md)
 
 ### Edições anteriores
 
@@ -30,7 +30,7 @@ A **Rinha de Backend** é uma competição amistosa em que desenvolvedores const
 
 **Rinha de Backend** ("Backend Brawl") is a friendly competition in which developers build backends under tight CPU and memory constraints. Each edition has a different theme — this one is **credit card fraud detection using vector search**.
 
-📖 **Full challenge documentation:** [**docs/en/README.md**](./docs/en/README.md)
+**Full challenge documentation:** [**docs/en/README.md**](./docs/en/README.md)
 
 ### Previous editions
 

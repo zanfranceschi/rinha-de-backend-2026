@@ -482,13 +482,15 @@ Se aparecer referência em `README.md` ou nas docs principais, atualizar para ap
 
 - [ ] **Step 2: Remover o arquivo**
 
-Run: `git rm SCORING.md`
+`SCORING.md` é untracked (nunca foi commitado), então `git rm` não funciona. Usar `rm` direto:
 
-- [ ] **Step 3: Commit**
+Run: `rm SCORING.md`
 
-```bash
-git commit -m "chore: remover SCORING.md, rascunho substituído por AVALIACAO/EVALUATION"
-```
+Verificar: `git status` não deve mais listar `SCORING.md`.
+
+- [ ] **Step 3: Nada a commitar**
+
+Como o arquivo era untracked, não há diff para commit. Pular commit desta task.
 
 ---
 

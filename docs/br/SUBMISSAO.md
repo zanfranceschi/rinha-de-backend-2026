@@ -76,7 +76,7 @@ Sobre o campo **open_to_work**: A Rinha já ajudou muita gente profissionalmente
 
 Para que seu backend de fato passe pelo teste, é necessário abrir uma [issue](https://github.com/zanfranceschi/rinha-de-backend-2026/issues) colocando `rinha/test` na descrição. Se você tiver mais de uma submissão, informe também o `id` – por exemplo, `rinha/test ana-experimental`.
 
-Essa edição da Rinha de Backend conta com uma engine que varre as issues abertas com essa descrição, executa os testes, posta o resultado dos testes (ou erro) em forma de comentário e fecha a issue. Para submeter seu backend a um novo teste, basta reabrir a issue ou abrir uma nova. É recomendado que reabra a mesma issue para que as comparações fiquem mais fáceis de serem feitas com versões anteriores do seu backend.
+Essa edição da Rinha de Backend conta com uma engine que varre as issues abertas com essa descrição, executa os testes, posta o resultado dos testes (ou erro) em forma de comentário e fecha a issue. Para submeter seu backend a um novo teste, basta abrir uma nova issue.
 
 ![alt text](open-issue.png)
 

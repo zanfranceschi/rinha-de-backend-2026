@@ -22,11 +22,9 @@ For each request, the `approved: true|false` response is classified as:
 
 - **TP (True Positive)** — fraud correctly denied
 - **TN (True Negative)** — legitimate transaction correctly approved
-- **FP (False Positive)** — legitimate incorrectly denied (weight 1 in `E`; counts as failure)
-- **FN (False Negative)** — fraud incorrectly approved (weight 3 in `E`; counts as failure)
-- **Error** — non-200 HTTP response (weight 5 in `E`; counts as failure)
-
-TP and TN do not directly enter the score — they feed only `detection_accuracy` (informational). The weights in `E` and the raw failure count (FP + FN + Err) power the formulas in the next section.
+- **FP (False Positive)** — legitimate incorrectly denied
+- **FN (False Negative)** — fraud incorrectly approved
+- **Error** — non-200 HTTP response
 
 ## Scoring formula
 

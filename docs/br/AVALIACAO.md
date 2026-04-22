@@ -22,11 +22,9 @@ Para cada requisição, a resposta `approved: true|false` é classificada como:
 
 - **TP (True Positive)** — fraude corretamente negada
 - **TN (True Negative)** — transação legítima corretamente aprovada
-- **FP (False Positive)** — legítima incorretamente negada (peso 1 em `E`; conta como falha)
-- **FN (False Negative)** — fraude incorretamente aprovada (peso 3 em `E`; conta como falha)
-- **Error** — erro HTTP não-200 (peso 5 em `E`; conta como falha)
-
-TP e TN não entram diretamente no cálculo do score — contribuem apenas para a `detection_accuracy` (informativa). Os pesos em `E` e a contagem pura de falhas (FP + FN + Err) alimentam as fórmulas da próxima seção.
+- **FP (False Positive)** — legítima incorretamente negada
+- **FN (False Negative)** — fraude incorretamente aprovada
+- **Error** — erro HTTP não-200
 
 ## Fórmula da pontuação
 

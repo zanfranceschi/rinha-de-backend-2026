@@ -77,7 +77,16 @@ export default function () {
 }
 
 export function handleSummary(data) {
+    // Constantes do scoring (ver docs/superpowers/specs/2026-04-22-logarithmic-scoring-design.md)
+    const K = 1000;
+    const T_MAX_MS = 1000;
+    const EPSILON_MIN = 0.001;
+    const BETA = 300;
+    const TX_CORTE = 0.15;
+    const SCORE_DET_CORTE = -3000;
+
     const httpDuration = data.metrics.http_req_duration.values;
+    const p99 = httpDuration['p(99)'];
 
     const tp = data.metrics.tp_count ? data.metrics.tp_count.values.count : 0;
     const tn = data.metrics.tn_count ? data.metrics.tn_count.values.count : 0;
@@ -85,20 +94,34 @@ export function handleSummary(data) {
     const fn = data.metrics.fn_count ? data.metrics.fn_count.values.count : 0;
     const errs = data.metrics.error_count ? data.metrics.error_count.values.count : 0;
 
-    // Scoring formula:
-    //   +1 per correct decision (TP or TN)
-    //   -1 per false positive (legit blocked)
-    //   -3 per false negative (fraud approved)
-    //   -5 per HTTP error / non-200
-    // Then multiplied by latency factor based on p99.
-    const TARGET_P99_MS = 10;
-    const rawScore = (tp * 1) + (tn * 1) + (fp * -1) + (fn * -3) + (errs * -5);
-    const p99 = httpDuration['p(99)'];
-    const latencyMult = TARGET_P99_MS / Math.max(p99, TARGET_P99_MS);
-    const finalScore = Math.max(0, rawScore) * latencyMult;
-
+    const N = tp + tn + fp + fn + errs;
     const classified = tp + tn + fp + fn;
     const accuracy = classified > 0 ? (tp + tn) / classified : 0;
+
+    // Erros ponderados (para a fórmula log) e contagem pura (para o corte)
+    const E = (fp * 1) + (fn * 3) + (errs * 5);
+    const failures = fp + fn + errs;
+    const epsilon = N > 0 ? E / N : 0;
+    const failureRate = N > 0 ? failures / N : 0;
+
+    // Score P99 (log, sem piso)
+    const p99Score = p99 > 0 ? K * Math.log10(T_MAX_MS / p99) : 0;
+
+    // Score detecção (log com penalidade absoluta, ou corte em -3000 se falhas > 15%)
+    let detScore;
+    let rateComponent = 0;
+    let absolutePenalty = 0;
+    let cutTriggered = false;
+    if (failureRate > TX_CORTE) {
+        detScore = SCORE_DET_CORTE;
+        cutTriggered = true;
+    } else {
+        rateComponent = K * Math.log10(1 / Math.max(epsilon, EPSILON_MIN));
+        absolutePenalty = -BETA * Math.log10(1 + E);
+        detScore = rateComponent + absolutePenalty;
+    }
+
+    const finalScore = p99Score + detScore;
 
     const result = {
         expected: expectedStats,
@@ -118,9 +141,16 @@ export function handleSummary(data) {
                 http_errors: errs,
             },
             detection_accuracy: +(accuracy * 100).toFixed(2) + '%',
-            target_p99_ms: TARGET_P99_MS,
-            latency_multiplier: +latencyMult.toFixed(4),
-            raw_score: rawScore,
+            failure_rate: +(failureRate * 100).toFixed(2) + '%',
+            weighted_errors_E: E,
+            error_rate_epsilon: +epsilon.toFixed(6),
+            p99_score: +p99Score.toFixed(2),
+            detection_score: {
+                value: +detScore.toFixed(2),
+                rate_component: +rateComponent.toFixed(2),
+                absolute_penalty: +absolutePenalty.toFixed(2),
+                cut_triggered: cutTriggered,
+            },
             final_score: +finalScore.toFixed(2),
         },
     };

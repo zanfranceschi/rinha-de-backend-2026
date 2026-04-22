@@ -28,18 +28,49 @@ For each request, the `approved: true|false` response is compared and scored wit
 
 ## Scoring formula
 
-```
-accuracy             = (TP × 1) + (TN × 1) + (FP × -1) + (FN × -3) + (Error × -5)
-latency_multiplier   = TARGET_P99_MS / max(p99, TARGET_P99_MS)
-final_score          = max(0, accuracy) × latency_multiplier
-```
-**TARGET_P99_MS = 10ms.**
+The final score is the sum of two independent logarithmic components — one for latency (p99), one for detection quality.
 
-## Weights — why it's like this
+### Latency component (score_p99)
 
-- **FN is worth -3** — letting a fraud through is 3× worse than blocking a legitimate customer (real financial impact)
-- **Error is worth -5** — unavailability is the worst of all worlds
-- **Latency multiplies the score** — a slow but accurate API loses to a fast and accurate one
+```
+score_p99 = K · log₁₀(T_max / p99)
+```
+
+- `K = 1000`, `T_max = 1000ms`.
+- No cap, no floor: very low p99 keeps gaining bonus; p99 > 1000ms goes negative.
+
+### Detection component (score_det)
+
+```
+E             = 1·FP + 3·FN + 5·Err           (weighted errors)
+ε             = E / N                          (weighted error rate)
+failures      = FP + FN + Err                  (raw failure count)
+failure_rate  = failures / N
+
+If failure_rate > 15%:
+    score_det = −3000
+Else:
+    score_det = K · log₁₀(1 / max(ε, ε_MIN)) − β · log₁₀(1 + E)
+```
+
+- `K = 1000`, `ε_MIN = 0.001`, `β = 300`.
+- Error weights: `FP = 1`, `FN = 3`, `Err = 5` (HTTP 500 is the worst).
+- **Cutoff rule:** if more than 15% of requests fail (counting FP + FN + Err), the detection score drops straight to `−3000`, zeroing the best possible p99 score.
+
+### Final score
+
+```
+final_score = score_p99 + score_det
+```
+
+Simple sum. Each component can be negative independently. Theoretical max is ~6000 (3000 each), reached with `p99 → 0` and `E = 0`.
+
+## Weights and parameters — why
+
+- **FN worth -3, Err worth -5** (inside `E`) — same ordering as before: letting a fraud through is 3× worse than blocking a legitimate customer; returning HTTP 5xx is 5× worse.
+- **Log over p99** — rewards each order-of-magnitude improvement equally. The gap between 100ms and 10ms is worth the same as 10ms to 1ms. Doesn't saturate: sub-10ms keeps earning points.
+- **Two terms in score_det** — the rate term (`K · log₁₀(1/ε)`) is N-invariant (same error rate = same score regardless of test size). The absolute penalty (`−β · log₁₀(1+E)`) punishes real error volume (every missed fraud is a real loss) but grows logarithmically so it doesn't explode with large N.
+- **15% failure cutoff** — above that, score_det = −3000, so a broken backend can't slide by on good p99 alone.
 
 ## Interpreting the test results
 
@@ -58,29 +89,46 @@ If you run the test locally, a `results.json` file will be generated. If your te
       "http_errors":                  0
     },
     "detection_accuracy": "98.90%",
-    "target_p99_ms": 10,
-    "latency_multiplier": 1.0,
-    "raw_score": 4900,
-    "final_score": 4900.00
+    "failure_rate": "1.10%",
+    "weighted_errors_E": 85,
+    "error_rate_epsilon": 0.017,
+    "p99_score": 2236.57,
+    "detection_score": {
+      "value": 1193.06,
+      "rate_component": 1769.55,
+      "absolute_penalty": -576.49,
+      "cut_triggered": false
+    },
+    "final_score": 3429.63
   }
 }
 ```
 
-- `breakdown` — counts of TP, TN, FP, FN, and HTTP errors.
-- `detection_accuracy` — `(TP + TN) / total_classified`. Informational only, not part of the score.
-- `latency_multiplier` — `1.0` when `p99 ≤ 10ms`; drops linearly from there (`10/p99`).
-- `raw_score` — points for accuracy, before the latency multiplier.
-- `final_score` — the number that matters, the final score.
+- `breakdown` — raw counts of TP, TN, FP, FN and HTTP errors.
+- `detection_accuracy` — `(TP + TN) / (TP + TN + FP + FN)`. Informational only.
+- `failure_rate` — `(FP + FN + Err) / N`. Crosses 15% → cutoff triggers.
+- `weighted_errors_E` — `1·FP + 3·FN + 5·Err`. Feeds `ε` and the absolute penalty.
+- `error_rate_epsilon` — `E / N`. Weighted rate used in the log term.
+- `p99_score` — `K · log₁₀(T_max / p99)`.
+- `detection_score.value` — final score_det (after cutoff if it triggered).
+- `detection_score.rate_component` — just the `K · log₁₀(1/ε)` term. `null` when the cutoff triggered.
+- `detection_score.absolute_penalty` — just the `−β · log₁₀(1 + E)` term. `null` when the cutoff triggered.
+- `detection_score.cut_triggered` — `true` if `failure_rate > 15%` and the score dropped to −3000.
+- `final_score` — `p99_score + detection_score.value`. The number that counts.
 
 
 ## Strategies (tips)
 
-Some observations that may be useful.
+Some useful observations.
 
-**The latency multiplier is cruel.** `p99 <= 10ms` keeps 100% of the `raw_score`. `p99 = 20ms` cuts it in half. `p99 = 100ms` wipes out 90% of the effort. In general, losing a bit of accuracy to improve latency can pay off.
+**Log gives exponential bonus for low p99.** Dropping from 10ms to 1ms is worth 1000 extra points in `p99_score`. Chasing each millisecond pays off.
 
-**HTTP errors cost 5×.** Try never to return HTTP 5xx or blow past timeouts. If your search takes too long for some reason, it's worth **returning any quick response** (e.g., classify as `approved: true` with `fraud_score: 0.0`) rather than erroring — `-1` (FP) or `-3` (FN) hurt less than `-5` (Error).
+**The 15% cutoff is harsh.** If more than 15% of requests fail (summing FP, FN, and HTTP errors), `detection_score` drops straight to −3000 and wipes out any p99 gain. Avoiding the cutoff zone matters more than tuning accuracy in the last decimals.
+
+**HTTP 500 hit in two places.** In `E` (weight 5 vs FP's 1) and in `failure_rate` (each Err counts as 1 raw failure, equal to FP or FN). If your backend has trouble, **returning any quick response** (e.g., `approved: true`, `fraud_score: 0.0`) lowers HTTP error count, though it raises FP or FN. Mathematically, in the normal regime, `-1` (FP) or `-3` (FN) in the log weight still hurts less than `-5` (Err) plus another point in `failure_rate`.
+
+**Weighted error rate is N-invariant.** You can't "hide" errors by inflating volume — same rate, same `rate_component`. But `absolute_penalty` grows log with the actual error count, so backends failing at large scale lose more points than at small scale.
 
 **When ANN is worth it.** Brute force over 100k vectors × 14 dimensions per query can get very expensive computationally. Adopting ANN (HNSW, IVF) or a ready-made vector database can help. But always measure before complicating things!
 
-**The reference files don't change during the test.** Pre-process freely at startup or during the container build — the more processing you move outside of the test, the better the `p99`.
+**Reference files don't change during the test.** Pre-process freely at startup or during the container build — the more processing you move outside of the test, the better the `p99`.

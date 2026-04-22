@@ -104,7 +104,7 @@ export function handleSummary(data) {
     const epsilon = N > 0 ? E / N : 0;
     const failureRate = N > 0 ? failures / N : 0;
 
-    // Score P99 (log, sem piso)
+    // Score P99 (log, sem piso). p99=0 = nenhuma resposta completou; retorna 0 pra evitar Infinity no JSON.
     const p99Score = p99 > 0 ? K * Math.log10(T_MAX_MS / p99) : 0;
 
     // Score detecção (log com penalidade absoluta, ou corte em -3000 se falhas > 15%)
@@ -130,7 +130,7 @@ export function handleSummary(data) {
             max: httpDuration.max.toFixed(2) + 'ms',
             med: httpDuration['med'].toFixed(2) + 'ms',
             p90: httpDuration['p(90)'].toFixed(2) + 'ms',
-            p99: httpDuration['p(99)'].toFixed(2) + 'ms',
+            p99: p99.toFixed(2) + 'ms',
         },
         scoring: {
             breakdown: {
@@ -147,8 +147,8 @@ export function handleSummary(data) {
             p99_score: +p99Score.toFixed(2),
             detection_score: {
                 value: +detScore.toFixed(2),
-                rate_component: +rateComponent.toFixed(2),
-                absolute_penalty: +absolutePenalty.toFixed(2),
+                rate_component: cutTriggered ? null : +rateComponent.toFixed(2),
+                absolute_penalty: cutTriggered ? null : +absolutePenalty.toFixed(2),
                 cut_triggered: cutTriggered,
             },
             final_score: +finalScore.toFixed(2),

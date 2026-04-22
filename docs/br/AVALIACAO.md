@@ -32,23 +32,23 @@ Essas cinco contagens, junto com a latência observada, alimentam a fórmula des
 
 Às vezes é mais fácil entender a pontuação observando casos concretos do que a fórmula. A tabela abaixo antecipa nove cenários, todos com N = 5000 requisições, indo do melhor caso ao pior — incluindo o ponto em que o corte de 15% passa a valer. Os detalhes de cada coluna são explicados nas próximas seções; por enquanto, basta saber que `final_score` é a pontuação final, soma de um score de latência (`p99_score`) e um score de detecção (`detection_score`).
 
-| Cenário              | FP  | FN  | Err  | p99    | Tx. falhas | p99_score | detection_score | final_score    | Descrição                                                                                                     |
-|----------------------|-----|-----|------|--------|------------|-----------|-----------------|----------------|---------------------------------------------------------------------------------------------------------------|
-| Perfeito             | 0   | 0   | 0    | 1ms    | 0,00%      | 3000,00   | 3000,00         | **6000,00**    | Todas as classificações corretas e latência mínima. Máximo de referência.                                     |
-| Excelente            | 5   | 5   | 0    | 3ms    | 0,20%      | 2522,88   | 2001,27         | **4524,15**    | Pouquíssimos erros de detecção e latência muito baixa.                                                        |
-| Bom                  | 30  | 20  | 0    | 10ms   | 1,00%      | 2000,00   | 1157,02         | **3157,02**    | Acurácia alta, p99 no antigo alvo de 10ms.                                                                    |
-| Mediano              | 80  | 50  | 0    | 50ms   | 2,60%      | 1301,03   | 628,16          | **1929,19**    | Acurácia razoável e latência intermediária.                                                                   |
-| Medíocre             | 200 | 150 | 50   | 150ms  | 8,00%      | 823,91    | −141,69         | **682,22**     | Muitos erros e p99 alto; o `detection_score` já fica negativo antes mesmo de disparar o corte.                |
-| No limite            | 500 | 250 | 0    | 200ms  | 15,00%     | 698,97    | −327,12         | **371,85**     | Taxa de falhas exatamente em 15% — o corte **não** dispara (a regra é estritamente maior que 15%).            |
-| Corte ativo          | 500 | 300 | 0    | 50ms   | 16,00%     | 1301,03   | −3000,00        | **−1698,97**   | Passou do limite: `detection_score` é fixado em −3000 independente do p99 baixo.                              |
-| Backend indisponível | 0   | 500 | 1000 | 5ms    | 30,00%     | 2301,03   | −3000,00        | **−698,97**    | Latência excelente, mas 1000 erros HTTP levam `failure_rate` a 30% e disparam o corte.                        |
-| Catastrófico         | 0   | 0   | 5000 | 500ms  | 100,00%    | 301,03    | −3000,00        | **−2698,97**   | Todas as requisições retornam HTTP 500. Score final bem negativo.                                             |
+| FP  | FN  | Err  | p99    | Tx. falhas | p99_score | detection_score | final_score  |
+|-----|-----|------|--------|------------|-----------|-----------------|--------------|
+| 0   | 0   | 0    | 1ms    | 0,00%      | 3000,00   | 3000,00         | **6000,00**  |
+| 5   | 5   | 0    | 3ms    | 0,20%      | 2522,88   | 2001,27         | **4524,15**  |
+| 30  | 20  | 0    | 10ms   | 1,00%      | 2000,00   | 1157,02         | **3157,02**  |
+| 80  | 50  | 0    | 50ms   | 2,60%      | 1301,03   | 628,16          | **1929,19**  |
+| 200 | 150 | 50   | 150ms  | 8,00%      | 823,91    | −141,69         | **682,22**   |
+| 500 | 250 | 0    | 200ms  | 15,00%     | 698,97    | −327,12         | **371,85**   |
+| 500 | 300 | 0    | 50ms   | 16,00%     | 1301,03   | −3000,00        | **−1698,97** |
+| 0   | 500 | 1000 | 5ms    | 30,00%     | 2301,03   | −3000,00        | **−698,97**  |
+| 0   | 0   | 5000 | 500ms  | 100,00%    | 301,03    | −3000,00        | **−2698,97** |
 
 Três leituras rápidas da tabela:
 
-- O `p99_score` acompanha a latência de forma independente. Entre **Perfeito** e **Catastrófico**, vai de 3000 a 301 sem saltos.
-- O `detection_score` acompanha a qualidade de detecção até 15% de falhas. A partir daí, é substituído por −3000 — a diferença entre **No limite** e **Corte ativo** mostra essa descontinuidade.
-- Mesmo um p99 excelente não compensa o corte: compare **Backend indisponível** (p99 = 5ms, `final = −698,97`) com **Bom** (p99 = 10ms, `final = 3157,02`).
+- O `p99_score` acompanha a latência de forma independente. Ao longo das linhas, vai de 3000 a 301 sem saltos, conforme o p99 cresce.
+- O `detection_score` acompanha a qualidade de detecção até 15% de falhas. A partir daí, é substituído por −3000 — a descontinuidade aparece entre a linha de 15,00% e a de 16,00%.
+- Mesmo um p99 excelente não compensa o corte: a linha com p99=5ms e 30% de falhas termina em `−698,97`, abaixo da linha com p99=10ms e taxa baixa (`3157,02`).
 
 ## Fórmula da pontuação
 

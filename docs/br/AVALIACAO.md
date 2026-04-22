@@ -18,13 +18,15 @@ O teste usa [payloads existentes](/test/test-data.json) previamente rotulados co
 
 ## Métricas coletadas
 
-Para cada requisição, a resposta `approved: true|false` é classificada como:
+A massa de dados do teste já vem rotulada — pra cada requisição a gente sabe de antemão se é fraude ou não. Comparando a resposta do seu backend (`approved: true|false`) com a esperada, cada requisição cai num de cinco baldes. Os quatro primeiros são a matriz de confusão clássica de classificação binária; o quinto é pra quando o backend nem conseguiu responder direito:
 
 - **TP (True Positive)** — fraude corretamente negada
 - **TN (True Negative)** — transação legítima corretamente aprovada
 - **FP (False Positive)** — legítima incorretamente negada
 - **FN (False Negative)** — fraude incorretamente aprovada
 - **Error** — erro HTTP não-200
+
+Essas cinco contagens, junto com a latência observada, alimentam a fórmula da próxima seção.
 
 ## Fórmula da pontuação
 

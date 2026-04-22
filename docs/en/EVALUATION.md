@@ -18,13 +18,15 @@ The test uses [existing payloads](/test/test-data.json) previously labeled based
 
 ## Collected metrics
 
-For each request, the `approved: true|false` response is classified as:
+The test dataset comes pre-labeled — for each request, whether it's fraud or not is known ahead of time. By comparing your backend's `approved: true|false` response against the expected one, each request lands in one of five buckets. The first four are the classic binary-classification confusion matrix; the fifth catches cases where your backend didn't even manage to respond properly:
 
 - **TP (True Positive)** — fraud correctly denied
 - **TN (True Negative)** — legitimate transaction correctly approved
 - **FP (False Positive)** — legitimate incorrectly denied
 - **FN (False Negative)** — fraud incorrectly approved
 - **Error** — non-200 HTTP response
+
+These five counts, along with the observed latency, feed the formula in the next section.
 
 ## Scoring formula
 

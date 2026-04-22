@@ -18,13 +18,15 @@ O teste usa [payloads existentes](/test/test-data.json) previamente rotulados co
 
 ## Métricas coletadas
 
-Para cada requisição, a resposta `approved: true|false` é comparada e pontuada com o seguinte:
+Para cada requisição, a resposta `approved: true|false` é classificada como:
 
-- **TP (True Positive)** — fraude corretamente negada (1 ponto)
-- **TN (True Negative)** — transação legítima corretamente aprovada (1 ponto)
-- **FP (False Positive)** — legítima incorretamente negada (-1 ponto)
-- **FN (False Negative)** — fraude incorretamente aprovada (-3 pontos)
-- **Error** — erro HTTP (-5 pontos)
+- **TP (True Positive)** — fraude corretamente negada
+- **TN (True Negative)** — transação legítima corretamente aprovada
+- **FP (False Positive)** — legítima incorretamente negada (peso 1 em `E`; conta como falha)
+- **FN (False Negative)** — fraude incorretamente aprovada (peso 3 em `E`; conta como falha)
+- **Error** — erro HTTP não-200 (peso 5 em `E`; conta como falha)
+
+TP e TN não entram diretamente no cálculo do score — contribuem apenas para a `detection_accuracy` (informativa). Os pesos em `E` e a contagem pura de falhas (FP + FN + Err) alimentam as fórmulas da próxima seção.
 
 ## Fórmula da pontuação
 
@@ -63,7 +65,7 @@ Senão:
 score_final = score_p99 + score_det
 ```
 
-Aditivo simples. Cada componente pode ser negativo independentemente. O máximo teórico é ~6000 pontos (3000 cada), alcançado com `p99 → 0` e `E = 0`.
+Aditivo simples. Cada componente pode ser negativo independentemente. O máximo de referência é ~6000 pontos: `p99_score = 3000` (com p99=1ms) + `detection_score = 3000` (com E=0). O `detection_score` tem teto em 3000 (via `ε_MIN`), mas o `p99_score` não — p99 abaixo de 1ms continua ganhando pontos.
 
 ## Pesos e parâmetros — por quê
 
@@ -92,14 +94,14 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se se
     "failure_rate": "1.10%",
     "weighted_errors_E": 85,
     "error_rate_epsilon": 0.017,
-    "p99_score": 2236.57,
+    "p99_score": 2235.83,
     "detection_score": {
-      "value": 1193.06,
+      "value": 1189.20,
       "rate_component": 1769.55,
-      "absolute_penalty": -576.49,
+      "absolute_penalty": -580.35,
       "cut_triggered": false
     },
-    "final_score": 3429.63
+    "final_score": 3425.03
   }
 }
 ```

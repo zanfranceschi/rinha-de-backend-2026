@@ -1,7 +1,7 @@
 # Pontuação logarítmica dual — design
 
 **Data:** 2026-04-22
-**Escopo:** `test/test.js`, `docs/br/AVALIACAO.md`, `docs/en/AVALIACAO.md` (se existir), `SCORING.md`
+**Escopo:** `test/test.js`, `docs/br/AVALIACAO.md`, `docs/en/EVALUATION.md` (se existir), `SCORING.md`
 
 ## Contexto e motivação
 
@@ -133,7 +133,7 @@ Campos a expor no JSON de resultado (substituindo `scoring.latency_multiplier`, 
 
 Reescrever a seção "Fórmula da pontuação" e "Pesos — por que assim" para refletir as novas fórmulas. Atualizar o JSON de exemplo em "Interpretando o resultado dos testes" para os novos campos. Seção "Estratégias (dicas)" precisa ser refeita — as observações atuais sobre multiplicador e corte em p99=10ms não se aplicam mais.
 
-### `docs/en/AVALIACAO.md`
+### `docs/en/EVALUATION.md`
 
 Verificar se existe versão em inglês espelho e aplicar a mesma atualização.
 

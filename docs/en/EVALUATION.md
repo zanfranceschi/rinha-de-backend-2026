@@ -18,13 +18,15 @@ The test uses [existing payloads](/test/test-data.json) previously labeled based
 
 ## Collected metrics
 
-For each request, the `approved: true|false` response is compared and scored with the following:
+For each request, the `approved: true|false` response is classified as:
 
-- **TP (True Positive)** — fraud correctly denied (1 point)
-- **TN (True Negative)** — legitimate transaction correctly approved (1 point)
-- **FP (False Positive)** — legitimate incorrectly denied (-1 point)
-- **FN (False Negative)** — fraud incorrectly approved (-3 points)
-- **Error** — HTTP error (-5 points)
+- **TP (True Positive)** — fraud correctly denied
+- **TN (True Negative)** — legitimate transaction correctly approved
+- **FP (False Positive)** — legitimate incorrectly denied (weight 1 in `E`; counts as failure)
+- **FN (False Negative)** — fraud incorrectly approved (weight 3 in `E`; counts as failure)
+- **Error** — non-200 HTTP response (weight 5 in `E`; counts as failure)
+
+TP and TN do not directly enter the score — they feed only `detection_accuracy` (informational). The weights in `E` and the raw failure count (FP + FN + Err) power the formulas in the next section.
 
 ## Scoring formula
 
@@ -63,7 +65,7 @@ Else:
 final_score = score_p99 + score_det
 ```
 
-Simple sum. Each component can be negative independently. Theoretical max is ~6000 (3000 each), reached with `p99 → 0` and `E = 0`.
+Simple sum. Each component can be negative independently. Reference max is ~6000: `p99_score = 3000` (at p99=1ms) + `detection_score = 3000` (at E=0). `detection_score` has a true ceiling of 3000 (via `ε_MIN`), but `p99_score` does not — p99 below 1ms keeps earning points.
 
 ## Weights and parameters — why
 
@@ -92,14 +94,14 @@ If you run the test locally, a `results.json` file will be generated. If your te
     "failure_rate": "1.10%",
     "weighted_errors_E": 85,
     "error_rate_epsilon": 0.017,
-    "p99_score": 2236.57,
+    "p99_score": 2235.83,
     "detection_score": {
-      "value": 1193.06,
+      "value": 1189.20,
       "rate_component": 1769.55,
-      "absolute_penalty": -576.49,
+      "absolute_penalty": -580.35,
       "cut_triggered": false
     },
-    "final_score": 3429.63
+    "final_score": 3425.03
   }
 }
 ```

@@ -28,6 +28,28 @@ The test dataset comes pre-labeled — for each request, whether the transaction
 
 These five counts, together with the observed latency, feed the formula described in the next section.
 
+## Scoring examples
+
+Sometimes it's easier to understand the scoring by looking at concrete cases than by reading the formula. The table below previews nine scenarios, all with N = 5000 requests, from the best case down to the worst — including the point where the 15% cutoff kicks in. The details of each column are explained in the next sections; for now, it's enough to know that `final_score` is the final score, the sum of a latency score (`p99_score`) and a detection score (`detection_score`).
+
+| Scenario             | FP  | FN  | Err  | p99    | Failure rate | p99_score | detection_score | final_score    | Description                                                                                                |
+|----------------------|-----|-----|------|--------|--------------|-----------|-----------------|----------------|------------------------------------------------------------------------------------------------------------|
+| Perfect              | 0   | 0   | 0    | 1ms    | 0.00%        | 3000.00   | 3000.00         | **6000.00**    | All classifications correct and minimal latency. Reference maximum.                                        |
+| Excellent            | 5   | 5   | 0    | 3ms    | 0.20%        | 2522.88   | 2001.27         | **4524.15**    | Very few detection errors and very low latency.                                                            |
+| Good                 | 30  | 20  | 0    | 10ms   | 1.00%        | 2000.00   | 1157.02         | **3157.02**    | High accuracy, p99 at the old 10ms target.                                                                 |
+| Average              | 80  | 50  | 0    | 50ms   | 2.60%        | 1301.03   | 628.16          | **1929.19**    | Reasonable accuracy and mid-range latency.                                                                 |
+| Mediocre             | 200 | 150 | 50   | 150ms  | 8.00%        | 823.91    | −141.69         | **682.22**     | Many errors and high p99; the `detection_score` is already negative before the cutoff triggers.            |
+| At the limit         | 500 | 250 | 0    | 200ms  | 15.00%       | 698.97    | −327.12         | **371.85**     | Failure rate exactly at 15% — the cutoff does **not** trigger (the rule is strictly greater than 15%).     |
+| Cutoff active        | 500 | 300 | 0    | 50ms   | 16.00%       | 1301.03   | −3000.00        | **−1698.97**   | Above the limit: `detection_score` is pinned at −3000 regardless of the low p99.                           |
+| Backend unavailable  | 0   | 500 | 1000 | 5ms    | 30.00%       | 2301.03   | −3000.00        | **−698.97**    | Excellent latency, but 1000 HTTP errors push `failure_rate` to 30% and trigger the cutoff.                 |
+| Catastrophic         | 0   | 0   | 5000 | 500ms  | 100.00%      | 301.03    | −3000.00        | **−2698.97**   | All requests return HTTP 500. Deeply negative final score.                                                 |
+
+Three quick takeaways:
+
+- `p99_score` tracks the latency dimension independently. Between **Perfect** and **Catastrophic**, it ranges from 3000 down to 301 without jumps.
+- `detection_score` tracks detection quality up to a 15% failure rate. Beyond that, it is replaced by −3000 — the gap between **At the limit** and **Cutoff active** shows that discontinuity.
+- Even excellent latency does not offset the cutoff: compare **Backend unavailable** (p99 = 5ms, `final = −698.97`) with **Good** (p99 = 10ms, `final = 3157.02`).
+
 ## Scoring formula
 
 The final score is the sum of two independent components: one for latency (p99) and one for detection quality. Both use a logarithmic function — the idea is to reward each order-of-magnitude improvement equally, rather than absolute differences. The detection component has one additional rule: if the failure rate exceeds 15%, its value is fixed at −3000, which fully offsets the best possible latency score.

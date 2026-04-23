@@ -30,25 +30,37 @@ Essas cinco contagens, junto com a latência observada, alimentam a fórmula des
 
 ## Exemplos de pontuação
 
-Às vezes é mais fácil entender a pontuação observando casos concretos do que a fórmula. A tabela abaixo antecipa nove cenários, todos com N = 5000 requisições, indo do melhor caso ao pior — incluindo o ponto em que o corte de 15% passa a valer. Os detalhes de cada coluna são explicados nas próximas seções; por enquanto, basta saber que `final_score` é a pontuação final, soma de um score de latência (`p99_score`) e um score de detecção (`detection_score`).
+Às vezes é mais fácil entender a pontuação observando casos concretos do que a fórmula. A tabela abaixo antecipa 20 cenários, todos com N = 5000 requisições, ordenados do melhor caso ao pior — incluindo o ponto em que o corte de 15% passa a valer e alguns extremos além disso. Os detalhes de cada coluna são explicados nas próximas seções; por enquanto, basta saber que `final_score` é a pontuação final, soma de um score de latência (`p99_score`) e um score de detecção (`detection_score`).
 
-| detecção falsa positiva | detecção falsa negativa | erro HTTP | falhas (detecção + HTTP) / total de requisições | p99   | score p99 | score detecção | score final  |
-|-------------------------|-------------------------|-----------|-------------------------------------------------|-------|-----------|----------------|--------------|
-| 0                       | 0                       | 0         | 0,00%                                           | 1ms   | 3000,00   | 3000,00        | **6000,00**  |
-| 5                       | 5                       | 0         | 0,20%                                           | 3ms   | 2522,88   | 2001,27        | **4524,15**  |
-| 30                      | 20                      | 0         | 1,00%                                           | 10ms  | 2000,00   | 1157,02        | **3157,02**  |
-| 80                      | 50                      | 0         | 2,60%                                           | 50ms  | 1301,03   | 628,16         | **1929,19**  |
-| 200                     | 150                     | 50        | 8,00%                                           | 150ms | 823,91    | −141,69        | **682,22**   |
-| 500                     | 250                     | 0         | 15,00%                                          | 200ms | 698,97    | −327,12        | **371,85**   |
-| 500                     | 300                     | 0         | 16,00%                                          | 50ms  | 1301,03   | −3000,00       | **−1698,97** |
-| 0                       | 500                     | 1000      | 30,00%                                          | 5ms   | 2301,03   | −3000,00       | **−698,97**  |
-| 0                       | 0                       | 5000      | 100,00%                                         | 500ms | 301,03    | −3000,00       | **−2698,97** |
+| detecção falsa positiva | detecção falsa negativa | erro HTTP | falhas (detecção + HTTP) / total de requisições | p99      | score p99 | score detecção | score final  |
+|-------------------------|-------------------------|-----------|-------------------------------------------------|----------|-----------|----------------|--------------|
+| 0                       | 0                       | 0         | 0,00%                                           | 0,1ms    | 4000,00   | 3000,00        | **7000,00**  |
+| 0                       | 0                       | 0         | 0,00%                                           | 1ms      | 3000,00   | 3000,00        | **6000,00**  |
+| 2                       | 2                       | 0         | 0,08%                                           | 0,5ms    | 3301,03   | 2509,61        | **5810,64**  |
+| 5                       | 2                       | 0         | 0,14%                                           | 0,8ms    | 3096,91   | 2333,82        | **5430,73**  |
+| 5                       | 5                       | 0         | 0,20%                                           | 3ms      | 2522,88   | 2001,27        | **4524,15**  |
+| 10                      | 5                       | 0         | 0,30%                                           | 5ms      | 2301,03   | 1876,54        | **4177,57**  |
+| 0                       | 0                       | 0         | 0,00%                                           | 100ms    | 1000,00   | 3000,00        | **4000,00**  |
+| 30                      | 20                      | 0         | 1,00%                                           | 10ms     | 2000,00   | 1157,02        | **3157,02**  |
+| 20                      | 10                      | 5         | 0,70%                                           | 15ms     | 1823,91   | 1259,66        | **3083,57**  |
+| 80                      | 50                      | 0         | 2,60%                                           | 50ms     | 1301,03   | 628,16         | **1929,19**  |
+| 50                      | 30                      | 20        | 2,00%                                           | 80ms     | 1096,91   | 604,15         | **1701,06**  |
+| 100                     | 50                      | 0         | 3,00%                                           | 300ms    | 522,88    | 581,13         | **1104,01**  |
+| 200                     | 150                     | 50        | 8,00%                                           | 150ms    | 823,91    | −141,69        | **682,22**   |
+| 500                     | 250                     | 0         | 15,00%                                          | 200ms    | 698,97    | −327,12        | **371,85**   |
+| 0                       | 500                     | 1000      | 30,00%                                          | 5ms      | 2301,03   | −3000,00       | **−698,97**  |
+| 500                     | 300                     | 0         | 16,00%                                          | 10ms     | 2000,00   | −3000,00       | **−1000,00** |
+| 500                     | 300                     | 0         | 16,00%                                          | 50ms     | 1301,03   | −3000,00       | **−1698,97** |
+| 0                       | 0                       | 5000      | 100,00%                                         | 500ms    | 301,03    | −3000,00       | **−2698,97** |
+| 800                     | 100                     | 0         | 18,00%                                          | 1000ms   | 0,00      | −3000,00       | **−3000,00** |
+| 0                       | 0                       | 5000      | 100,00%                                         | 60000ms  | −1778,15  | −3000,00       | **−4778,15** |
 
-Três leituras rápidas da tabela:
+Quatro leituras rápidas da tabela:
 
-- O `p99_score` acompanha a latência de forma independente. Ao longo das linhas, vai de 3000 a 301 sem saltos, conforme o p99 cresce.
-- O `detection_score` acompanha a qualidade de detecção até 15% de falhas. A partir daí, é substituído por −3000 — a descontinuidade aparece entre a linha de 15,00% e a de 16,00%.
-- Mesmo um p99 excelente não compensa o corte: a linha com p99=5ms e 30% de falhas termina em `−698,97`, abaixo da linha com p99=10ms e taxa baixa (`3157,02`).
+- O `p99_score` vai de 4000 (p99 = 0,1ms) até −1778 (p99 = 60s) ao longo das linhas, sem descontinuidades. Note que ele pode ficar negativo sozinho quando p99 > 1000ms — a última linha mostra exatamente isso.
+- O `detection_score` é livre até a taxa de falhas de 15%. A partir daí, fica fixo em −3000. A descontinuidade aparece entre a linha de 15,00% e a próxima com mais de 15% (no caso, a de 30,00% com p99 muito baixo).
+- Mesmo um p99 excelente não compensa o corte: a linha com p99 = 5ms e 30% de falhas termina em `−698,97`, enquanto a linha com p99 = 10ms e 1,00% de falhas termina em `3157,02`. A primeira é 2× mais rápida e ainda perde por quase 4000 pontos.
+- O `final_score` **não tem piso** igual ao `detection_score`: com p99 muito alto (ex.: 60s, timeout) e corte ativo, a pontuação passa de −4700. A linha com `final = −3000,00` exato ocorre quando p99 = 1000ms (o `p99_score` vira zero) e o corte está ativo.
 
 ## Fórmula da pontuação
 

@@ -30,25 +30,37 @@ These five counts, together with the observed latency, feed the formula describe
 
 ## Scoring examples
 
-Sometimes it's easier to understand the scoring by looking at concrete cases than by reading the formula. The table below previews nine scenarios, all with N = 5000 requests, from the best case down to the worst — including the point where the 15% cutoff kicks in. The details of each column are explained in the next sections; for now, it's enough to know that `final_score` is the final score, the sum of a latency score (`p99_score`) and a detection score (`detection_score`).
+Sometimes it's easier to understand the scoring by looking at concrete cases than by reading the formula. The table below previews 20 scenarios, all with N = 5000 requests, ordered from the best case down to the worst — including the point where the 15% cutoff kicks in and some extremes beyond it. The details of each column are explained in the next sections; for now, it's enough to know that `final_score` is the final score, the sum of a latency score (`p99_score`) and a detection score (`detection_score`).
 
-| false positive detection | false negative detection | HTTP error | failures (detection + HTTP) / total requests | p99   | p99 score | detection score | final score  |
-|--------------------------|--------------------------|------------|----------------------------------------------|-------|-----------|-----------------|--------------|
-| 0                        | 0                        | 0          | 0.00%                                        | 1ms   | 3000.00   | 3000.00         | **6000.00**  |
-| 5                        | 5                        | 0          | 0.20%                                        | 3ms   | 2522.88   | 2001.27         | **4524.15**  |
-| 30                       | 20                       | 0          | 1.00%                                        | 10ms  | 2000.00   | 1157.02         | **3157.02**  |
-| 80                       | 50                       | 0          | 2.60%                                        | 50ms  | 1301.03   | 628.16          | **1929.19**  |
-| 200                      | 150                      | 50         | 8.00%                                        | 150ms | 823.91    | −141.69         | **682.22**   |
-| 500                      | 250                      | 0          | 15.00%                                       | 200ms | 698.97    | −327.12         | **371.85**   |
-| 500                      | 300                      | 0          | 16.00%                                       | 50ms  | 1301.03   | −3000.00        | **−1698.97** |
-| 0                        | 500                      | 1000       | 30.00%                                       | 5ms   | 2301.03   | −3000.00        | **−698.97**  |
-| 0                        | 0                        | 5000       | 100.00%                                      | 500ms | 301.03    | −3000.00        | **−2698.97** |
+| false positive detection | false negative detection | HTTP error | failures (detection + HTTP) / total requests | p99      | p99 score | detection score | final score  |
+|--------------------------|--------------------------|------------|----------------------------------------------|----------|-----------|-----------------|--------------|
+| 0                        | 0                        | 0          | 0.00%                                        | 0.1ms    | 4000.00   | 3000.00         | **7000.00**  |
+| 0                        | 0                        | 0          | 0.00%                                        | 1ms      | 3000.00   | 3000.00         | **6000.00**  |
+| 2                        | 2                        | 0          | 0.08%                                        | 0.5ms    | 3301.03   | 2509.61         | **5810.64**  |
+| 5                        | 2                        | 0          | 0.14%                                        | 0.8ms    | 3096.91   | 2333.82         | **5430.73**  |
+| 5                        | 5                        | 0          | 0.20%                                        | 3ms      | 2522.88   | 2001.27         | **4524.15**  |
+| 10                       | 5                        | 0          | 0.30%                                        | 5ms      | 2301.03   | 1876.54         | **4177.57**  |
+| 0                        | 0                        | 0          | 0.00%                                        | 100ms    | 1000.00   | 3000.00         | **4000.00**  |
+| 30                       | 20                       | 0          | 1.00%                                        | 10ms     | 2000.00   | 1157.02         | **3157.02**  |
+| 20                       | 10                       | 5          | 0.70%                                        | 15ms     | 1823.91   | 1259.66         | **3083.57**  |
+| 80                       | 50                       | 0          | 2.60%                                        | 50ms     | 1301.03   | 628.16          | **1929.19**  |
+| 50                       | 30                       | 20         | 2.00%                                        | 80ms     | 1096.91   | 604.15          | **1701.06**  |
+| 100                      | 50                       | 0          | 3.00%                                        | 300ms    | 522.88    | 581.13          | **1104.01**  |
+| 200                      | 150                      | 50         | 8.00%                                        | 150ms    | 823.91    | −141.69         | **682.22**   |
+| 500                      | 250                      | 0          | 15.00%                                       | 200ms    | 698.97    | −327.12         | **371.85**   |
+| 0                        | 500                      | 1000       | 30.00%                                       | 5ms      | 2301.03   | −3000.00        | **−698.97**  |
+| 500                      | 300                      | 0          | 16.00%                                       | 10ms     | 2000.00   | −3000.00        | **−1000.00** |
+| 500                      | 300                      | 0          | 16.00%                                       | 50ms     | 1301.03   | −3000.00        | **−1698.97** |
+| 0                        | 0                        | 5000       | 100.00%                                      | 500ms    | 301.03    | −3000.00        | **−2698.97** |
+| 800                      | 100                      | 0          | 18.00%                                       | 1000ms   | 0.00      | −3000.00        | **−3000.00** |
+| 0                        | 0                        | 5000       | 100.00%                                      | 60000ms  | −1778.15  | −3000.00        | **−4778.15** |
 
-Three quick takeaways:
+Four quick takeaways:
 
-- `p99_score` tracks the latency dimension independently. Across the rows, it ranges from 3000 down to 301 without jumps, as p99 grows.
-- `detection_score` tracks detection quality up to a 15% failure rate. Beyond that, it is replaced by −3000 — the discontinuity appears between the 15.00% row and the 16.00% row.
-- Even excellent latency does not offset the cutoff: the row with p99=5ms and a 30% failure rate ends at `−698.97`, below the row with p99=10ms and a low failure rate (`3157.02`).
+- `p99_score` ranges from 4000 (p99 = 0.1ms) down to −1778 (p99 = 60s) across the rows, without discontinuities. It can go negative on its own when p99 > 1000ms — the last row shows exactly that.
+- `detection_score` is unconstrained up to a 15% failure rate. Beyond that, it is pinned at −3000. The discontinuity shows between the 15.00% row and the next row with a failure rate above 15%.
+- Even excellent latency does not offset the cutoff: the row with p99 = 5ms and a 30% failure rate ends at `−698.97`, while the row with p99 = 10ms and a 1.00% failure rate ends at `3157.02`. The first is 2× faster and still loses by nearly 4000 points.
+- `final_score` **has no floor** the way `detection_score` does: with a very high p99 (e.g., 60s timeout) and the cutoff active, it drops below −4700. The row with `final = −3000.00` exactly happens when p99 = 1000ms (so `p99_score` is zero) and the cutoff is active.
 
 ## Scoring formula
 

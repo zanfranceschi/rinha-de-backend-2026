@@ -1,8 +1,10 @@
 # Rinha de Backend 2026 – Fraud detection via vector search!
 
-## About this edition
+> **Heads up!** This edition is in a validation phase: rules may still change and the dates have not been defined yet. Even so, anyone can already take part to have fun, learn, and help improve this edition — just develop your backend and submit it for preview tests.
 
-The challenge is to build a **fraud detection API for card authorizations**. For each transaction, your API performs a **vector search** on a dataset of reference transactions and decides whether to approve or deny it, along with a fraud score.
+## The challenge
+
+Build a **fraud detection API for card transactions using vector search**. For each incoming transaction, you transform the payload into a vector, search the reference dataset for the most similar transactions and decide whether to approve or deny it.
 
 ```mermaid
 flowchart LR
@@ -15,21 +17,97 @@ flowchart LR
     class Fraud highlight
 ```
 
-The module highlighted in green is **what you will build**.
+You only implement the module highlighted in green — the card authorization system is not part of the challenge.
 
+## What your API must expose
 
-## The basics of the challenge
+Your API must expose two endpoints on port `9999`:
 
-1. The API receives a `POST /fraud-score` with the transaction data.
-1. It normalizes the fields into a 14-dimensional vector (values between `0.0` and `1.0`).
-1. Performs a **vector search** on the reference dataset.
-1. Takes the `K=5` nearest neighbors and does majority voting.
-1. Returns `{ approved, fraud_score }`, for example:
-   ```json
-   { "approved": false, "fraud_score": 0.8 }
-   ```
+- `GET /ready` — must respond `2xx` when your API is ready to receive requests.
+- `POST /fraud-score` — must receive the transaction data and return your decision.
 
-Plus the Rinha classic: a load balancer with two or more APIs and the usual struggle with almost no memory and even less CPU.
+Example request and response:
+
+```
+POST /fraud-score
+
+Request:
+{
+  "id": "tx-123",
+  "transaction": { "amount": 384.88, "installments": 3, "requested_at": "..." },
+  "customer":    { "avg_amount": 769.76, "tx_count_24h": 3, "known_merchants": [...] },
+  "merchant":    { "id": "MERC-001", "mcc": "5912", "avg_amount": 298.95 },
+  "terminal":    { "is_online": false, "card_present": true, "km_from_home": 13.7 },
+  "last_transaction": { "timestamp": "...", "km_from_current": 18.8 }
+}
+
+Response:
+{ "approved": false, "fraud_score": 0.8 }
+```
+
+The full field contract is in [API.md](./API.md).
+
+## How to decide approve or deny
+
+For each transaction, your API must:
+
+1. Transform the payload into a 14-dimensional vector, following the normalization formulas.
+2. Search, in the reference dataset, for the 5 nearest vectors.
+3. Compute `fraud_score = number_of_frauds_among_the_5 / 5`.
+4. Respond with `approved = fraud_score < 0.6` and the `fraud_score` in the JSON.
+
+The 14 dimensions, the normalization formulas and the constants are in [DETECTION_RULES.md](./DETECTION_RULES.md). If you have never worked with vector search, start with [VECTOR_SEARCH.md](./VECTOR_SEARCH.md).
+
+## Reference files
+
+You receive three files. They don't change during the test, so you can pre-process them at build time or at container startup.
+
+- `references.json.gz` — 100,000 vectors labeled as `fraud` or `legit`.
+- `mcc_risk.json` — risk by merchant category.
+- `normalization.json` — constants used in normalization.
+
+Details in [DATASET.md](./DATASET.md).
+
+## Infrastructure constraints
+
+- Your solution must have at least one load balancer and two instances of your API, distributing load in round-robin.
+- The load balancer must not apply detection logic — it only distributes requests.
+- Your submission must be a `docker-compose.yml` with public images compatible with `linux-amd64`.
+- The sum of the limits of all your services must not exceed 1 CPU and 350 MB of memory.
+- Network mode must be `bridge`. `host` and `privileged` modes are not allowed.
+- Your application must respond on port `9999`.
+
+Details in [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## Scoring
+
+Your final score is the sum of two independent components: latency and detection quality. Each ranges from -3000 to +3000, so the total ranges from -6000 to +6000.
+
+- **Latency (`score_p99`)** — computed from the observed p99. Each 10x improvement is worth +1000 points. Saturates at +3000 when your p99 is 1 ms or lower. Fixed at -3000 if your p99 exceeds 2000 ms.
+- **Detection (`score_det`)** — combines a weighted error rate (false positives, false negatives and HTTP errors) with an absolute penalty. HTTP errors weigh more than false negatives, which weigh more than false positives. If your failure rate exceeds 15%, the score is fixed at -3000.
+
+The full formula, weights and scoring examples are in [EVALUATION.md](./EVALUATION.md).
+
+## Submission
+
+To participate, you must open a pull request adding a JSON file in [participants/](../../participants) named after your GitHub username. The file lists your submitted repositories.
+
+Your repository must have two branches:
+
+- `main` — the source code.
+- `submission` — only the files needed to run the test, including the `docker-compose.yml` at the root.
+
+To run the official test, you must open an issue with `rinha/test` in the description. The Rinha engine runs the test, posts the result as a comment and closes the issue.
+
+Step-by-step in [SUBMISSION.md](./SUBMISSION.md).
+
+## Test environment
+
+Mac Mini Late 2014, 2.6 GHz, 8 GB RAM, Ubuntu 24.04.
+
+## Frequently asked questions
+
+Recurring questions and common pitfalls in [FAQ.md](./FAQ.md).
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Topologia
 
-Seu backend precisa conter pelo menos **um load balancer e duas instâncias de APIs web**. Você pode ou não usar um banco de dados, um middleware, mais instâncias de APIs, etc. O importante é ter um load balancer distribuindo carga igualmente (round-robin simples) entre **pelo menos** duas instâncias de API.
+A sua solução deve ter pelo menos **um load balancer e duas instâncias de API**. Você pode usar banco de dados, middleware, mais instâncias ou o que achar necessário. O essencial é ter um load balancer distribuindo carga de forma igual (round-robin simples) entre **pelo menos** duas instâncias de API.
 
 ```mermaid
 flowchart LR
@@ -11,15 +11,15 @@ flowchart LR
     LB --> API2[api 2]
 ```
 
-**IMPORTANTE!**: Seu load balancer não pode processar as requisições da perspectiva de lógica de negócio (inspecionar o payload, fazer condicionais, responder requisições HTTP antes de redirecionar para servidores upstream, etc.). Ou seja, nada de *\~smart\~ load balancing*!
+**Importante**: o seu load balancer não pode aplicar lógica de negócio — ele não pode inspecionar o payload, decidir por condicionais, responder à requisição antes de repassá-la, nem transformar o corpo da mensagem. Ele só distribui requisições entre as instâncias.
 
 ## Conteinerização
 
-Seu backend precisa ser disponibilizado como uma declaração no formato do docker compose. Todas as imagens declaradas no arquivo `docker-compose.yml` precisam estar publicamente disponíveis.
+A sua solução deve ser entregue como um arquivo `docker-compose.yml`. Todas as imagens declaradas nele devem estar publicamente disponíveis.
 
-Você deverá restringir o uso de CPU e memória em 1 unidade de CPU e 350MB de memória entre todos os serviços declarados no `docker-compose.yml` – a soma dos limites de todos os recursos deve ser de 1 unidade de CPU e 350MB de memória; distribua como quiser. Exemplo de como restringir recursos:
+A soma dos limites de recursos de todos os serviços declarados no `docker-compose.yml` deve ser de, no máximo, **1 CPU e 350 MB de memória**. Você distribui esse total entre os serviços como preferir. Exemplo de como declarar o limite de um serviço:
 
-```YML
+```yml
 services:
   seu-servico:
     ...
@@ -30,13 +30,14 @@ services:
           memory: "42MB"
 ```
 
-A conteinerização precisa estar disponível na branch `submission`, como [descrito aqui](./SUBMISSAO.md). 
+A entrega deve estar na branch `submission` do seu repositório, conforme [descrito aqui](./SUBMISSAO.md).
 
 ## A porta 9999
 
-Seu backend precisam responder na porta **9999**. Ou seja, o load balancer da sua solução precisa responder às requisições nessa porta.
+A sua solução deve responder na porta **9999** — ou seja, o load balancer é quem recebe as requisições nessa porta.
 
-**Outas restrições**
-- As imagens devem ser compatíveis com linux-amd64 (especialmente importante para quem usa Mac com processadores ARM64 - [referência](https://docs.docker.com/build/building/multi-platform/)).
-- O modo de rede deve ser bridge – o modo host não é permitido.
-- Não é permitido modo privileged.
+## Outras restrições
+
+- As imagens devem ser compatíveis com `linux-amd64` (atenção especial para quem usa Mac com processadores ARM64 — [referência](https://docs.docker.com/build/building/multi-platform/)).
+- O modo de rede deve ser `bridge`. O modo `host` não é permitido.
+- O modo `privileged` não é permitido.

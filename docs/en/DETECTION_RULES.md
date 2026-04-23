@@ -1,94 +1,13 @@
 # Fraud detection rules
 
-This document defines the **rules that translate a transaction into a fraud detection vector**: the vectorization (14 dimensions) and normalization. The vector search uses this vector to find similar transactions in the reference dataset and decide whether the new transaction is fraudulent.
+This document defines how your API should turn a transaction into a fraud detection vector. It covers the vectorization (the 14 dimensions) and the normalization rules. The vector search uses that vector to find, in the reference dataset, the transactions most similar to the one that just arrived, and from there decide whether the new transaction is fraudulent.
 
-> If you don't even know what a vector search is, read [VECTOR_SEARCH.md](./VECTOR_SEARCH.md) first — that document explains the concept in a didactic way with a super-simplified example.
+If you are not yet familiar with the concept of vector search, it is worth starting with [VECTOR_SEARCH.md](./VECTOR_SEARCH.md) — there the topic is introduced in a didactic way, with a very simplified example.
 
 
 ## Flow overview
-The flow below shows a **simplified example** (without the 14 dimensions) of the step-by-step you should follow to implement the fraud detection.
 
-```
-1. receives the request:
-    {
-        "amount": 10.00,
-        "installments": 12,
-        "requested_at": "2026-04-20T12:34:56Z",
-        "last_transaction_at": "2026-04-20T23:59:37Z"
-    }
-          ↓
-2. vectorizes/normalizes
-    [0.34 1.00 0.50 0.99]
-          ↓
-3. finds the 5 most similar references via vector search:
-    [0.15 0.81 0.83 0.89]: legit
-    [0.02 0.38 0.44 0.88]: fraud
-    [0.95 0.02 0.20 0.52]: fraud
-    [0.74 0.93 0.87 0.27]: legit
-    [0.78 0.93 0.87 0.27]: legit
-          ↓
-4. computes the fraud score with a threshold of 0.6 for fraud:
-    score: 2 frauds / 5 records = 0.4
-    approved = score >= 0.6 → true
-          ↓
-5. responds with the result:
-    {
-        "approved": true,
-        "fraud_score": 0.4
-    }
-```
-
-## The 14 vector dimensions
-
-Transactions ([examples here](/resources/example-payloads.json)) must be transformed into 14-dimensional vectors following the order and normalization rules below.
-
-| index | dimension                | formula                                                                          |
-|-----|--------------------------|----------------------------------------------------------------------------------|
-| 0   | `amount`                 | `clamp(transaction.amount / max_amount)`                                         |
-| 1   | `installments`           | `clamp(transaction.installments / max_installments)`                             |
-| 2   | `amount_vs_avg`          | `clamp((transaction.amount / customer.avg_amount) / amount_vs_avg_ratio)`        |
-| 3   | `hour_of_day`            | `hour(transaction.requested_at) / 23`  (0-23, UTC)                               |
-| 4   | `day_of_week`            | `day_of_week(transaction.requested_at) / 6`    (mon=0, sun=6)                    |
-| 5   | `minutes_since_last_tx`  | `clamp(minutes / max_minutes)` or `-1` if `last_transaction: null`               |
-| 6   | `km_from_last_tx`        | `clamp(last_transaction.km_from_current / max_km)` or `-1` if `last_transaction: null` |
-| 7   | `km_from_home`           | `clamp(terminal.km_from_home / max_km)`                                          |
-| 8   | `tx_count_24h`           | `clamp(customer.tx_count_24h / max_tx_count_24h)`                                |
-| 9   | `is_online`              | `1` if `terminal.is_online`, else `0`                                            |
-| 10  | `card_present`           | `1` if `terminal.card_present`, else `0`                                         |
-| 11  | `unknown_merchant`       | `1` if `merchant.id is in customer.known_merchants`, else `0` (inverted: `1` = unknown) |
-| 12  | `mcc_risk`               | `mcc_risk.json[merchant.mcc]` (default `0.5`)                                    |
-| 13  | `merchant_avg_amount`    | `clamp(merchant.avg_amount / max_merchant_avg_amount)`                           |
-
-The `clamp(x)` function restricts the value to the interval `[0.0, 1.0]`.
-
-
-## Normalization constants
-
-Some values, like `max_amount` and `max_installments`, are defined in the file [normalization.json](/resources/normalization.json):
-
-```json
-{
-  "max_amount": 10000,
-  "max_installments": 12,
-  "amount_vs_avg_ratio": 10,
-  "max_minutes": 1440,
-  "max_km": 1000,
-  "max_tx_count_24h": 20,
-  "max_merchant_avg_amount": 10000
-}
-```
-
-For more details about the reference files (including `mcc_risk.json` and `references.json.gz`), see [DATASET.md](./DATASET.md).
-
-## Practical examples
-
-Four complete examples of the fraud detection flow — from the payload to the response.
-
-> Prerequisite: [API.md](./API.md) — payload format.
-
-The search for the 5 nearest neighbors among the references uses **Euclidean distance** over the 14-dimensional vectors, but you can use other distance metric algorithms if you prefer.
-
-### Example 1 — legitimate transaction (score: 0.0)
+The flow below shows, with a real example of a legitimate transaction, the step by step your API should follow to decide on a transaction. In this case, a customer makes a low-value purchase at a merchant they already know, close to home.
 
 ```
 1. receives the request:
@@ -101,10 +20,10 @@ The search for the 5 nearest neighbors among the references uses **Euclidean dis
       "last_transaction": null
     }
           ↓
-2. vectorizes/normalizes (14 dimensions):
+2. vectorizes and normalizes (14 dimensions):
     [0.0041, 0.1667, 0.05, 0.7826, 0.3333, -1, -1, 0.0292, 0.15, 0, 1, 0, 0.15, 0.006]
           ↓
-3. finds the 5 nearest neighbors (Euclidean distance):
+3. searches for the 5 nearest neighbors (Euclidean distance):
     dist=0.0340  legit
     dist=0.0488  legit
     dist=0.0509  legit
@@ -122,75 +41,69 @@ The search for the 5 nearest neighbors among the references uses **Euclidean dis
     }
 ```
 
-### Example 2 — fraudulent transaction (score: 1.0)
+Notice the `-1` at positions 5 and 6: since `last_transaction` came as `null`, there are no "minutes since the last transaction" nor "km from the last transaction" to normalize.
 
-```
-1. receives the request:
-    {
-      "id": "tx-1788243118",
-      "transaction":      { "amount": 4368.82, "installments": 8, "requested_at": "2026-03-17T02:04:06Z" },
-      "customer":         { "avg_amount": 68.88, "tx_count_24h": 18, "known_merchants": ["MERC-004", "MERC-015", "MERC-017", "MERC-007"] },
-      "merchant":         { "id": "MERC-062", "mcc": "7801", "avg_amount": 25.55 },
-      "terminal":         { "is_online": true, "card_present": false, "km_from_home": 881.61 },
-      "last_transaction": { "timestamp": "2026-03-17T01:58:06Z", "km_from_current": 660.92 }
-    }
-          ↓
-2. vectorizes/normalizes (14 dimensions):
-    [0.4369, 0.6667, 1.0, 0.087, 0.1667, 0.0042, 0.6609, 0.8816, 0.9, 1, 0, 1, 0.8, 0.0026]
-          ↓
-3. finds the 5 nearest neighbors (Euclidean distance):
-    dist=0.1139  fraud
-    dist=0.1154  fraud
-    dist=0.1228  fraud
-    dist=0.1260  fraud
-    dist=0.1307  fraud
-          ↓
-4. computes the score (threshold 0.6):
-    score = 5 frauds / 5 = 1.0
-    approved = score < 0.6 → false
-          ↓
-5. response:
-    {
-      "approved": false,
-      "fraud_score": 1.0
-    }
-```
+## The 14 vector dimensions
 
-### Example 3 — borderline transaction (score: 0.4)
+Transactions ([realistic examples here](/resources/example-payloads.json)) need to be transformed into 14-position vectors, following the order and normalization rules below.
 
-```
-1. receives the request:
-    {
-      "id": "tx-2174907811",
-      "transaction":      { "amount": 1265.15, "installments": 6, "requested_at": "2026-03-25T19:00:34Z" },
-      "customer":         { "avg_amount": 349.94, "tx_count_24h": 5, "known_merchants": ["MERC-014", "MERC-001", "MERC-008", "MERC-003"] },
-      "merchant":         { "id": "MERC-031", "mcc": "7802", "avg_amount": 107.11 },
-      "terminal":         { "is_online": true, "card_present": false, "km_from_home": 136.51 },
-      "last_transaction": { "timestamp": "2026-03-25T17:09:34Z", "km_from_current": 131.62 }
-    }
-          ↓
-2. vectorizes/normalizes (14 dimensions):
-    [0.1265, 0.5, 0.3615, 0.8261, 0.3333, 0.0771, 0.1316, 0.1365, 0.25, 1, 0, 1, 0.75, 0.0107]
-          ↓
-3. finds the 5 nearest neighbors (Euclidean distance):
-    dist=0.2099  fraud
-    dist=0.2370  fraud
-    dist=0.2475  legit
-    dist=0.2868  legit
-    dist=0.3105  legit
-          ↓
-4. computes the score (threshold 0.6):
-    score = 2 frauds / 5 = 0.4
-    approved = score < 0.6 → true
-          ↓
-5. response:
-    {
-      "approved": true,
-      "fraud_score": 0.4
-    }
+| index | dimension                | formula                                                                          |
+|-----|--------------------------|----------------------------------------------------------------------------------|
+| 0   | `amount`                 | `clamp(transaction.amount / max_amount)`                                         |
+| 1   | `installments`           | `clamp(transaction.installments / max_installments)`                             |
+| 2   | `amount_vs_avg`          | `clamp((transaction.amount / customer.avg_amount) / amount_vs_avg_ratio)`        |
+| 3   | `hour_of_day`            | `hour(transaction.requested_at) / 23`  (0-23, UTC)                               |
+| 4   | `day_of_week`            | `day_of_week(transaction.requested_at) / 6`    (mon=0, sun=6)                    |
+| 5   | `minutes_since_last_tx`  | `clamp(minutes / max_minutes)` or `-1` if `last_transaction: null`               |
+| 6   | `km_from_last_tx`        | `clamp(last_transaction.km_from_current / max_km)` or `-1` if `last_transaction: null` |
+| 7   | `km_from_home`           | `clamp(terminal.km_from_home / max_km)`                                          |
+| 8   | `tx_count_24h`           | `clamp(customer.tx_count_24h / max_tx_count_24h)`                                |
+| 9   | `is_online`              | `1` if `terminal.is_online`, else `0`                                            |
+| 10  | `card_present`           | `1` if `terminal.card_present`, else `0`                                         |
+| 11  | `unknown_merchant`       | `1` if `merchant.id` is not in `customer.known_merchants`, else `0` (inverted: `1` = unknown) |
+| 12  | `mcc_risk`               | `mcc_risk.json[merchant.mcc]` (default value `0.5`)                              |
+| 13  | `merchant_avg_amount`    | `clamp(merchant.avg_amount / max_merchant_avg_amount)`                           |
+
+The `clamp(x)` function keeps the value within the interval `[0.0, 1.0]` — anything below `0.0` becomes `0.0`, and anything above `1.0` becomes `1.0`.
+
+### The special case of `last_transaction: null`
+
+Indices 5 and 6 depend on the customer's previous transaction. When the current transaction is the customer's first (that is, `last_transaction` arrives as `null` in the payload), there is no value to normalize. In those cases, your API should use the sentinel value `-1` in those two positions. This `-1` is the only case in which the vector may contain a value outside the interval `[0.0, 1.0]`, and it serves precisely to distinguish "missing data" from a normalized value close to zero.
+
+
+## Normalization constants
+
+Some values that appear in the formulas, such as `max_amount` and `max_installments`, are defined in the file [normalization.json](/resources/normalization.json):
+
+```json
+{
+  "max_amount": 10000,
+  "max_installments": 12,
+  "amount_vs_avg_ratio": 10,
+  "max_minutes": 1440,
+  "max_km": 1000,
+  "max_tx_count_24h": 20,
+  "max_merchant_avg_amount": 10000
+}
 ```
 
-### Example 4 — fraudulent transaction without `last_transaction` (score: 1.0)
+For more details about the reference files (including `mcc_risk.json` and `references.json.gz`), see [DATASET.md](./DATASET.md).
+
+
+## How the decision is made
+
+Once the vector is ready, your API should:
+
+1. Find, in the reference dataset, the 5 vectors closest to the vector of the transaction that just arrived.
+2. Compute `fraud_score` as the fraction of frauds among those 5 references — that is, `number_of_frauds / 5`.
+3. Respond with `approved = fraud_score < 0.6`. The threshold of `0.6` is fixed.
+
+To measure "proximity" between two vectors, the examples in this document use **Euclidean distance** over the 14 dimensions. That is the reference metric, but you can use other distance metrics (such as cosine or Manhattan) if you find that it makes more sense for your implementation.
+
+
+## Example of a fraudulent transaction
+
+To contrast with the legitimate case in the overview, see how a fraudulent transaction looks: a high value, far from home, at an unknown merchant, with no previous transaction history. For the full payload format, see [API.md](./API.md).
 
 ```
 1. receives the request:
@@ -203,10 +116,10 @@ The search for the 5 nearest neighbors among the references uses **Euclidean dis
       "last_transaction": null
     }
           ↓
-2. vectorizes/normalizes (14 dimensions — note the `-1` at indices 5 and 6 due to `last_transaction: null`):
+2. vectorizes and normalizes (14 dimensions — note the `-1` at indices 5 and 6 due to `last_transaction: null`):
     [0.9506, 0.8333, 1.0, 0.2174, 0.8333, -1, -1, 0.9523, 1.0, 0, 1, 1, 0.75, 0.0055]
           ↓
-3. finds the 5 nearest neighbors (Euclidean distance):
+3. searches for the 5 nearest neighbors (Euclidean distance):
     dist=0.2315  fraud
     dist=0.2384  fraud
     dist=0.2552  fraud

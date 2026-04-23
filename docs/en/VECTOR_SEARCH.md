@@ -1,37 +1,37 @@
 # Vector search — an introduction
 
-This document explains, step-by-step through an example, how a **vector search** works in the context of fraud detection for this edition of Rinha.
+This document walks through, with an example, how a **vector search** works in the context of fraud detection for this edition of Rinha.
 
 ## What is a vector search?
 
-A vector search is simply finding what is most similar instead of searching for exact equality. It's a **similarity search**.
+A vector search finds what is most similar instead of looking for exact equality. It is a **similarity search**.
 
-Each transaction is represented by a **vector** — a list of numbers describing its characteristics (value, time, cardholder's average, etc.). Similar transactions have similar vectors — they stay "close" to each other in space.
+Each transaction is represented by a **vector** — a list of numbers describing its characteristics (amount, time of day, cardholder's average, and so on). Similar transactions have similar vectors, and stay "close" to each other in space.
 
-The vector search answers the question:
+A vector search answers the question:
 
 > *"Given this new transaction, which transactions in my history look most like it?"*
 
-If the most similar transactions were classified as fraud, the new one probably is too. If they were legitimate, it's probably legitimate.
+If the most similar past transactions were classified as fraud, the new one probably is too. If they were legitimate, it is probably legitimate.
 
 ### Where else does this appear?
 
 The same technique is behind several everyday applications:
 
-- **Recommendation systems** — Spotify, Netflix, and Amazon suggest songs, movies, and products by finding items whose vectors are similar to those you've already consumed.
-- **Semantic search and RAG** — instead of searching for exact words, systems like ChatGPT compare the vector (*embedding*) of your question with document vectors to find the most relevant excerpts.
+- **Recommendation systems** — Spotify, Netflix, and Amazon suggest songs, movies, and products by finding items whose vectors are similar to those you have already consumed.
+- **Semantic search and RAG** — instead of matching exact words, systems like ChatGPT compare the vector (an *embedding*, a numeric representation of text) of your question against document vectors to find the most relevant excerpts.
 - **Image search** — Google Images and Pinterest convert photos into vectors and compare them visually.
-- **Facial recognition** — each face becomes a vector; identifying a person means finding the closest vector in the database of known faces.
-- **Plagiarism and duplicate detection** — comparing a text's vector against a corpus to find similar content (even when rewritten).
+- **Facial recognition** — each face becomes a vector; identifying a person means finding the closest vector in a database of known faces.
+- **Plagiarism and duplicate detection** — comparing a text's vector against a corpus to find similar content, even when it has been rewritten.
 - **Fraud and anomaly detection** — the case of this Rinha: comparing the "shape" of a transaction against a classified history.
 
-In all these cases the idea is the same — represent "things" as vectors and use proximity in space as a measure of similarity.
+In all of these cases the idea is the same: represent "things" as vectors and use proximity in space as a measure of similarity.
 
 ---
 
 ## Step-by-step example
 
-Let's follow a transaction from start to finish — from the received payload to the decision.
+You can follow a transaction from start to finish, from the received payload to the decision.
 
 ### 1. Normalization constants
 
@@ -63,7 +63,7 @@ dim2 = clamp(hour                / max_hour)   = clamp(22    / 23)    = 0.96
 dim3 = clamp(customer_avg_amount / max_avg)    = clamp(4800  / 5000)  = 0.96
 ```
 
-> The `clamp(x)` function restricts the value to the interval `[0.0, 1.0]`. See `dim1`: this transaction's `amount` (`12,500`) exceeds the ceiling `max_amount = 10,000`, and the division yields `1.25` — outside the interval. `clamp()` caps it at `1.0`. Without this protection, the vector would leave the normalized space and distort the entire vector search.
+> The `clamp(x)` function restricts a value to the interval `[0.0, 1.0]`. Look at `dim1`: this transaction's `amount` (`12,500`) exceeds the ceiling `max_amount = 10,000`, and the division yields `1.25`, which is outside the interval. `clamp()` caps it at `1.0`. Without this protection, the vector would leave the normalized space and distort the entire vector search.
 
 **Resulting query vector:**
 
@@ -73,7 +73,7 @@ dim3 = clamp(customer_avg_amount / max_avg)    = clamp(4800  / 5000)  = 0.96
 
 ### 4. Vector search — compute the distance to each reference
 
-Here, using Euclidean distance calculation, with 3 dimensions, it would be:
+Using Euclidean distance with 3 dimensions, the formula is:
 
 ```math
 \text{dist}(q, r) = \sqrt{(q_1 - r_1)^2 + (q_2 - r_2)^2 + (q_3 - r_3)^2}
@@ -107,7 +107,9 @@ Here, using Euclidean distance calculation, with 3 dimensions, it would be:
 | 6 | [0.0092, 0.0833, 0.05]    | legit | 1.606                             |
 
 ### 5. The K=3 nearest neighbors
-We then select the `3` nearest neighbors.
+
+You then select the `3` nearest neighbors.
+
 ```
 1st — ref 4 (fraud) — 0.064
 2nd — ref 2 (fraud) — 0.425
@@ -115,7 +117,8 @@ We then select the `3` nearest neighbors.
 ```
 
 ### 6. Majority vote
-The vote is actually the ratio between fraud and legitimate references. In this case, the 3 closest transactions are labeled as fraudulent.
+
+The vote is the ratio between fraud and legitimate references. In this case, the 3 closest transactions are labeled as fraudulent.
 
 ```
 fraud: 3 votes
@@ -125,7 +128,8 @@ fraud_score = 3 / 3 = 1.0
 ```
 
 ### 7. Decision
-Not all `K` nearest transactions need to be labeled as fraud for the transaction being processed to also be marked as fraud. We can, for example, say that if two-thirds of the references are fraud, we also mark the transaction as fraud. This is what we call the `threshold`. Let's use a threshold of `0.6`:
+
+Not all `K` nearest transactions need to be labeled as fraud for the transaction being processed to also be marked as fraud. You might decide, for example, that if two-thirds of the references are fraud, the transaction is also marked as fraud. This cutoff is called the `threshold`. Using a threshold of `0.6`:
 
 ```
 fraud_score (1.0) >= threshold (0.6) → transaction DENIED
@@ -144,38 +148,38 @@ fraud_score (1.0) >= threshold (0.6) → transaction DENIED
 
 ## The intuition
 
-The example here shows a transaction whose 3 nearest references were labeled as fraud. This means that the "shape" of the transaction – based on the references – is most likely that of a fraud. The three nearest neighbors share in common *high value, late hour, and high-end cardholder*.
+The example above shows a transaction whose 3 nearest references were labeled as fraud. This means that the "shape" of the transaction, based on the references, looks most like a fraud. The three nearest neighbors share in common *high amount, late hour, and high-end cardholder*.
 
-The vector search **doesn't "understand" fraud** — it just finds the most similar past transactions and lets the majority decide the label of the new one.
+The vector search **does not "understand" fraud** — it just finds the most similar past transactions and lets the majority decide the label of the new one.
 
-In Machine Learning terms, this is called **non-parametric supervised learning** (or *instance-based learning*) — there's no trained model: just the memorized dataset and search at query time. Rinha is also on the AI hype. 😎
+In Machine Learning terms, this is called **non-parametric supervised learning** (also known as *instance-based learning*): there is no trained model, just the memorized dataset and a search at query time.
 
 ---
 
 ## Distance metrics and search algorithms
 
-The example above uses **Euclidean distance**, but it's just one of the options for measuring "how similar two vectors are". The most common ones are:
+The example above uses **Euclidean distance**, but that is only one of the options for measuring "how similar two vectors are". The most common ones are:
 
-- **Euclidean** — $\sqrt{\sum_i (q_i - r_i)^2}$. The "straight-line distance" in space. Intuitive and the most commonly used starting point.
+- **Euclidean** — $\sqrt{\sum_i (q_i - r_i)^2}$. The "straight-line distance" in space. Intuitive and the most common starting point.
 - **Manhattan** (L1) — $\sum_i |q_i - r_i|$. Sum of absolute differences. Cheaper to compute (no square root or multiplication) and penalizes outliers more softly.
-- **Cosine** — compares the **angle** between vectors, not the size. Useful when you care about the "direction" of the vector more than the magnitude (texts, embeddings, etc.).
+- **Cosine** — compares the **angle** between vectors, not their magnitude. Useful when you care about the "direction" of the vector more than its size (texts, embeddings, and similar cases).
 
 ### Exact KNN vs ANN (Approximate Nearest Neighbors)
 
-The simplest way to find the K nearest neighbors is **exact KNN**: iterate through all references, calculate the distance to each one, and sort. It works, but costs O(N) per query — with 100k references and a tight latency budget, it can be too expensive.
+The simplest way to find the K nearest neighbors is **exact KNN**: iterate through all references, calculate the distance to each one, and sort. It works, but it costs O(N) per query. With 100k references and a tight latency budget, it can become too expensive.
 
-**ANN** can be an alternative: data structures that sacrifice a bit of accuracy to respond faster. Some families:
+**ANN** is an alternative: data structures that give up a bit of accuracy to respond faster. Some families:
 
-- **HNSW** (Hierarchical Navigable Small World) — layered graph, this is what pgvector, Qdrant, and most vector databases use by default. Query in **`O(log N)`**.
-- **IVF** (Inverted File Index) — partitions the space into "cells" and searches only in those closest to the query. Query in **`O(√N)`** with typical partitioning.
+- **HNSW** (Hierarchical Navigable Small World) — a layered graph; this is what pgvector, Qdrant, and most vector databases use by default. Query in **`O(log N)`**.
+- **IVF** (Inverted File Index) — partitions the space into "cells" and searches only in the ones closest to the query. Query in **`O(√N)`** with typical partitioning.
 - **LSH** (Locality-Sensitive Hashing) — hash functions that collide for similar vectors. Query in **`O(N^ρ)`** with `ρ < 1` (sub-linear; depends on the approximation factor).
 
-#### Which distance metric to use for this Rinha de Backend???
+#### Which distance metric to use for this Rinha de Backend?
 
-You can use **brute force, KNN, ANN, a vector database, a trained AI model, a bunch of IF/ELSE**, or anything else. You'll need to find the balance between vector search accuracy and performance — the strategy is up to you.
+You can use **brute force, KNN, ANN, a vector database, a trained AI model, a pile of IF/ELSE**, or anything else. You will need to find the balance between vector search accuracy and performance — the strategy is up to you.
 
 ---
 
 ## Next step
 
-This document uses a simplified example (3 dimensions) just for didactic purposes. The actual challenge specification uses **14 dimensions** — described in [DETECTION_RULES.md](./DETECTION_RULES.md), where you'll also find complete flow examples.
+This document uses a simplified example (3 dimensions) for didactic purposes. The actual challenge specification uses **14 dimensions** — described in [DETECTION_RULES.md](./DETECTION_RULES.md), where you will also find complete flow examples.

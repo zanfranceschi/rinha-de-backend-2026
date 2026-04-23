@@ -2,7 +2,7 @@
 
 ## Topology
 
-Your backend needs to contain at least **one load balancer and two web API instances**. You may or may not use a database, middleware, more API instances, etc. The important thing is to have a load balancer distributing the load evenly (simple round-robin) across **at least** two API instances.
+Your solution must have **at least one load balancer and two web API instances**. You may or may not use a database, middleware, additional API instances, and so on. What matters is having a load balancer distributing traffic evenly (simple round-robin) across **at least** two API instances.
 
 ```mermaid
 flowchart LR
@@ -11,13 +11,13 @@ flowchart LR
     LB --> API2[api 2]
 ```
 
-**IMPORTANT!**: Your load balancer cannot process requests from a business-logic perspective (inspecting the payload, doing conditionals, responding to HTTP requests before forwarding to upstream servers, etc.). In other words, no *\~smart\~ load balancing*!
+**Important**: your load balancer must not process requests from a business-logic perspective — it cannot inspect the payload, apply conditionals, or respond to HTTP requests before forwarding them to the upstream servers. Its job is to forward traffic, nothing more.
 
 ## Containerization
 
-Your backend must be made available as a docker compose declaration. All images declared in the `docker-compose.yml` file must be publicly available.
+Your solution must be available as a docker compose declaration. Every image declared in `docker-compose.yml` must be publicly available.
 
-You must restrict CPU and memory usage to 1 CPU unit and 350MB of memory across all services declared in `docker-compose.yml` – the sum of all resource limits must be 1 CPU unit and 350MB of memory; distribute it however you like. Example of how to restrict resources:
+CPU and memory usage must be limited to **1 CPU unit and 350MB of memory** across all services declared in `docker-compose.yml`. The sum of all resource limits must respect this total, and you are free to distribute it however you prefer. Example of how to declare the limits:
 
 ```YML
 services:
@@ -34,9 +34,10 @@ The containerization must be available on the `submission` branch, as [described
 
 ## Port 9999
 
-Your backend must respond on port **9999**. That is, your solution's load balancer needs to respond to requests on this port.
+Your solution must respond on port **9999** — that is, your load balancer must accept requests on this port.
 
-**Other constraints**
-- Images must be compatible with linux-amd64 (especially important for those using Mac with ARM64 processors - [reference](https://docs.docker.com/build/building/multi-platform/)).
-- Network mode must be bridge – host mode is not allowed.
-- Privileged mode is not allowed.
+## Other constraints
+
+- Images must be compatible with linux-amd64 (this matters especially if you use a Mac with an ARM64 processor — [reference](https://docs.docker.com/build/building/multi-platform/)).
+- Network mode must be `bridge`. `host` mode is not allowed.
+- `privileged` mode is not allowed.

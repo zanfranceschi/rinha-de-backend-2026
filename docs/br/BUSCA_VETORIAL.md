@@ -1,31 +1,31 @@
 # Busca vetorial — uma introdução
 
-Este documento explica, passo-a-passo através de um exemplo, como funciona uma **busca vetorial** no contexto da detecção de fraude desta edição da Rinha.
+Este documento explica, com um exemplo passo-a-passo, como funciona uma **busca vetorial** no contexto da detecção de fraude desta edição da Rinha.
 
 ## O que é uma busca vetorial?
 
-Uma busca vetorial é simplesmente achar o que mais se parece em vez de buscar por igualdade exata. É uma **busca por semelhança**.
+Uma busca vetorial procura o que mais se parece em vez de procurar por igualdade exata. É uma **busca por semelhança**.
 
-Cada transação é representada por um **vetor** — uma lista de números que descreve suas características (valor, horário, média do portador, etc.). Transações parecidas têm vetores parecidos — ficam "próximas" umas das outras no espaço.
+Cada transação é representada por um **vetor** — uma lista de números que descreve suas características, como valor, horário e média do portador. Transações parecidas têm vetores parecidos, ou seja, ficam "próximas" umas das outras num espaço.
 
 A busca vetorial responde à pergunta:
 
-> *"Dada essa transação nova, quais transações do meu histórico mais se parecem com ela?"*
+> *"Dada esta transação nova, quais transações do histórico mais se parecem com ela?"*
 
-Se as transações mais parecidas foram classificadas como fraude, provavelmente a nova também é. Se foram legítimas, provavelmente é legítima.
+Se as transações mais parecidas foram classificadas como fraude, a nova provavelmente também é. Se foram legítimas, a nova provavelmente é legítima.
 
 ### Onde mais isso aparece?
 
-A mesma técnica está por trás de várias aplicações cotidianas:
+A mesma técnica está por trás de várias aplicações do dia a dia:
 
 - **Sistemas de recomendação** — Spotify, Netflix e Amazon sugerem músicas, filmes e produtos encontrando itens cujos vetores são parecidos com os que você já consumiu.
-- **Busca semântica e RAG** — em vez de buscar por palavras exatas, sistemas como ChatGPT comparam o vetor (*embedding*) da sua pergunta com vetores de documentos para achar os trechos mais relevantes.
+- **Busca semântica e RAG** — em vez de procurar por palavras exatas, sistemas como o ChatGPT comparam o vetor (*embedding*) da sua pergunta com vetores de documentos para encontrar os trechos mais relevantes.
 - **Busca por imagem** — Google Images e Pinterest convertem fotos em vetores e comparam visualmente.
-- **Reconhecimento facial** — cada rosto vira um vetor; identificar uma pessoa é achar o vetor mais próximo no banco de rostos conhecidos.
-- **Detecção de plágio e de duplicatas** — comparar o vetor de um texto contra um corpus para encontrar conteúdo parecido (mesmo reescrito).
+- **Reconhecimento facial** — cada rosto vira um vetor; identificar uma pessoa é encontrar o vetor mais próximo no banco de rostos conhecidos.
+- **Detecção de plágio e de duplicatas** — comparar o vetor de um texto contra um corpus para encontrar conteúdo parecido, mesmo que reescrito.
 - **Detecção de fraude e de anomalias** — o caso desta Rinha: comparar o "formato" de uma transação contra um histórico classificado.
 
-Em todos esses casos a ideia é a mesma — representar "coisas" como vetores e usar a proximidade no espaço como medida de similaridade.
+Em todos esses casos a ideia é a mesma: representar "coisas" como vetores e usar a proximidade no espaço como medida de similaridade.
 
 ---
 
@@ -73,14 +73,13 @@ dim3 = limitar(customer_avg_amount / max_avg)    = limitar(4800  / 5000)  = 0.96
 
 ### 4. Busca vetorial — calcular a distância até cada referência
 
-Aqui, usando o cálculo de distância euclidiana, com 3 as dimensões, ficaria:
+Aqui, usando a distância euclidiana com 3 dimensões, fica:
 
 ```math
 \text{dist}(q, r) = \sqrt{(q_1 - r_1)^2 + (q_2 - r_2)^2 + (q_3 - r_3)^2}
 ```
 
-> A **distância euclidiana** é a "distância em linha reta" entre dois pontos no espaço — o teorema de Pitágoras estendido para mais dimensões. Para cada par de coordenadas você calcula a diferença, eleva ao quadrado, soma tudo e tira a raiz. Quanto menor o resultado, mais parecidos os dois vetores.
-
+> A **distância euclidiana** é a "distância em linha reta" entre dois pontos no espaço — o teorema de Pitágoras estendido para mais dimensões. Para cada par de coordenadas você calcula a diferença, eleva ao quadrado, soma tudo e tira a raiz. Quanto menor o resultado, mais parecidos são os dois vetores.
 
 **Dataset de referência:**
 
@@ -95,7 +94,7 @@ Aqui, usando o cálculo de distância euclidiana, com 3 as dimensões, ficaria:
 ]
 ```
 
-**Distâncias calculadas e ordenas (da menor para maior):**
+**Distâncias calculadas e ordenadas (da menor para a maior):**
 
 | # | vetor de referência       | label | distância até `[1.0, 0.96, 0.96]` |
 |---|---------------------------|-------|-----------------------------------|
@@ -107,7 +106,9 @@ Aqui, usando o cálculo de distância euclidiana, com 3 as dimensões, ficaria:
 | 6 | [0.0092, 0.0833, 0.05]    | legit | 1.606                             |
 
 ### 5. Os K=3 vizinhos mais próximos
-Selectionamos então os `3` vizinhos mais próximos.
+
+Selecionamos os `3` vizinhos mais próximos:
+
 ```
 1º — ref 4 (fraud) — 0.064
 2º — ref 2 (fraud) — 0.425
@@ -115,7 +116,8 @@ Selectionamos então os `3` vizinhos mais próximos.
 ```
 
 ### 6. Votação por maioria
-A votação na verdade é a razão entre referências de fraude e legítimas. No caso, as 3 transações mais próximas estão rotuladas como fraudulentas.
+
+A votação é, na prática, a razão entre referências de fraude e referências legítimas. Neste caso, as 3 transações mais próximas estão rotuladas como fraudulentas.
 
 ```
 fraud: 3 votos
@@ -125,7 +127,8 @@ fraud_score = 3 / 3 = 1.0
 ```
 
 ### 7. Decisão
-Nem todas as `K` transações mais próximos precisam estar rotuladas como fraude para que a transação em processamento também seja marcada como fraude. A gente pode, por exemplo, dizer que se dois terços das referências forem fraude, nós também marcamos a transação como fraude. Isso é o que chamamos de `threshold` ou limiar. Vamos usar um threshold de `0.6`:
+
+Nem todas as `K` transações mais próximas precisam estar rotuladas como fraude para que a nova transação também seja marcada como fraude. Você pode, por exemplo, definir que, se dois terços das referências forem fraude, a transação também é marcada como fraude. Esse valor é o `threshold` (ou limiar). Vamos usar um threshold de `0.6`:
 
 ```
 fraud_score (1.0) >= threshold (0.6) → transação NEGADA
@@ -144,11 +147,11 @@ fraud_score (1.0) >= threshold (0.6) → transação NEGADA
 
 ## A intuição
 
-O exemplo aqui mostra uma transação que teve as 3 referências mais próximas rotuladas como fraude. Isso significa que o "formato" da transação – baseado nas referências – muito provavelmente é o de uma fraude. Os três vizinhos mais próximos têm em comum *valor alto, horário tardio e portador de alto padrão*.
+O exemplo mostra uma transação cujas 3 referências mais próximas estão rotuladas como fraude. Isso significa que o "formato" da transação — baseado nas referências — provavelmente é o de uma fraude. Os três vizinhos mais próximos têm em comum *valor alto, horário tardio e portador de alto padrão*.
 
 A busca vetorial **não "entende" fraude** — ela apenas encontra as transações passadas mais parecidas e deixa a maioria decidir o rótulo da nova.
 
-Em termos de Machine Learning, isso se chama **aprendizado supervisionado não-paramétrico** (ou *instance-based learning*) — não existe modelo treinado: só o dataset memorizado e a busca em tempo de consulta. Rinha também tá na hype de IA. 😎
+Em termos de Machine Learning, isso se chama **aprendizado supervisionado não-paramétrico** (ou *instance-based learning*): não existe modelo treinado, apenas o dataset memorizado e a busca feita em tempo de consulta.
 
 ---
 
@@ -156,26 +159,26 @@ Em termos de Machine Learning, isso se chama **aprendizado supervisionado não-p
 
 O exemplo acima usa **distância euclidiana**, mas ela é apenas uma das opções para medir "quão parecidos são dois vetores". As mais comuns são:
 
-- **Euclidiana** — $\sqrt{\sum_i (q_i - r_i)^2}$. A "distância em linha reta" no espaço. Intuitiva e a mais usada como ponto de partida.
+- **Euclidiana** — $\sqrt{\sum_i (q_i - r_i)^2}$. A "distância em linha reta" no espaço. Intuitiva e normalmente usada como ponto de partida.
 - **Manhattan** (L1) — $\sum_i |q_i - r_i|$. Soma das diferenças absolutas. Mais barata de calcular (sem raiz nem multiplicação) e penaliza outliers de forma mais suave.
-- **Cosseno** — compara o **ângulo** entre os vetores, não o tamanho. Útil quando você se importa com a "direção" do vetor mais do que com a magnitude (textos, embeddings, etc.).
+- **Cosseno** — compara o **ângulo** entre os vetores, não o tamanho. Útil quando o que importa é a "direção" do vetor, e não a magnitude (textos, embeddings, etc.).
 
 ### KNN exato vs ANN (Approximate Nearest Neighbors)
 
-A forma mais simples de achar os K vizinhos mais próximos é o **KNN exato**: percorrer todas as referências, calcular a distância para cada uma e ordenar. Funciona, mas custa O(N) por consulta — com 100k referências e um orçamento de latência apertado, pode ser caro demais.
+A forma mais simples de encontrar os K vizinhos mais próximos é o **KNN exato**: percorrer todas as referências, calcular a distância para cada uma e ordenar. Funciona, mas custa O(N) por consulta — com 100 mil referências e um orçamento de latência apertado, pode ser caro demais.
 
-**ANN** pode ser uma alternativa: estruturas de dados que sacrificam um pouco de precisão para responder mais rápido. Algumas famílias:
+**ANN** é uma alternativa: estruturas de dados que abrem mão de um pouco de precisão para responder mais rápido. Algumas famílias:
 
-- **HNSW** (Hierarchical Navigable Small World) — grafo em camadas, é o que pgvector, Qdrant e a maioria dos bancos vetoriais usam por padrão. Consulta em **`O(log N)`**.
+- **HNSW** (Hierarchical Navigable Small World) — grafo em camadas. É o que pgvector, Qdrant e a maioria dos bancos vetoriais usam por padrão. Consulta em **`O(log N)`**.
 - **IVF** (Inverted File Index) — particiona o espaço em "células" e busca apenas nas mais próximas da consulta. Consulta em **`O(√N)`** com particionamento típico.
 - **LSH** (Locality-Sensitive Hashing) — funções de hash que colidem para vetores parecidos. Consulta em **`O(N^ρ)`** com `ρ < 1` (sub-linear; depende do fator de aproximação).
 
-#### Qual métrica de distância usar para esta Rinha de Backend???
+#### Qual abordagem usar nesta Rinha de Backend?
 
-Você pode usar **brute force, KNN, ANN, banco vetorial, modelo de IA treinado, um monte de IF/ELSE**, ou qualquer outra coisa. Você vai precisar encontrar o equilíbrio entre a precisão da busca vetorial e performanca — a estratégia é com você.
+Você pode usar **força bruta, KNN exato, ANN, banco vetorial, modelo de IA treinado, uma sequência de IF/ELSE** ou qualquer outra coisa. O que você precisa encontrar é o equilíbrio entre a precisão da busca vetorial e a performance — a estratégia fica a seu critério.
 
 ---
 
 ## Próximo passo
 
-Este documento usa um exemplo simplificado (3 dimensões) só para fins didáticos. A especificação real do desafio usa **14 dimensões** — descritas em [REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md), onde também estão exemplos completos do fluxo.
+Este documento usa um exemplo simplificado, com 3 dimensões, apenas para fins didáticos. A especificação real do desafio usa **14 dimensões**, descritas em [REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md), onde também estão exemplos completos do fluxo.

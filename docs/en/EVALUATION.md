@@ -32,17 +32,17 @@ These five counts, together with the observed latency, feed the formula describe
 
 Sometimes it's easier to understand the scoring by looking at concrete cases than by reading the formula. The table below previews nine scenarios, all with N = 5000 requests, from the best case down to the worst — including the point where the 15% cutoff kicks in. The details of each column are explained in the next sections; for now, it's enough to know that `final_score` is the final score, the sum of a latency score (`p99_score`) and a detection score (`detection_score`).
 
-| false positive detection | false negative detection | HTTP error | p99   | failures / total requests | p99 score | detection score | final score  |
-|--------------------------|--------------------------|------------|-------|---------------------------|-----------|-----------------|--------------|
-| 0                        | 0                        | 0          | 1ms   | 0.00%                     | 3000.00   | 3000.00         | **6000.00**  |
-| 5                        | 5                        | 0          | 3ms   | 0.20%                     | 2522.88   | 2001.27         | **4524.15**  |
-| 30                       | 20                       | 0          | 10ms  | 1.00%                     | 2000.00   | 1157.02         | **3157.02**  |
-| 80                       | 50                       | 0          | 50ms  | 2.60%                     | 1301.03   | 628.16          | **1929.19**  |
-| 200                      | 150                      | 50         | 150ms | 8.00%                     | 823.91    | −141.69         | **682.22**   |
-| 500                      | 250                      | 0          | 200ms | 15.00%                    | 698.97    | −327.12         | **371.85**   |
-| 500                      | 300                      | 0          | 50ms  | 16.00%                    | 1301.03   | −3000.00        | **−1698.97** |
-| 0                        | 500                      | 1000       | 5ms   | 30.00%                    | 2301.03   | −3000.00        | **−698.97**  |
-| 0                        | 0                        | 5000       | 500ms | 100.00%                   | 301.03    | −3000.00        | **−2698.97** |
+| false positive detection | false negative detection | HTTP error | p99   | failures (detection + HTTP) / total requests | p99 score | detection score | final score  |
+|--------------------------|--------------------------|------------|-------|----------------------------------------------|-----------|-----------------|--------------|
+| 0                        | 0                        | 0          | 1ms   | 0.00%                                        | 3000.00   | 3000.00         | **6000.00**  |
+| 5                        | 5                        | 0          | 3ms   | 0.20%                                        | 2522.88   | 2001.27         | **4524.15**  |
+| 30                       | 20                       | 0          | 10ms  | 1.00%                                        | 2000.00   | 1157.02         | **3157.02**  |
+| 80                       | 50                       | 0          | 50ms  | 2.60%                                        | 1301.03   | 628.16          | **1929.19**  |
+| 200                      | 150                      | 50         | 150ms | 8.00%                                        | 823.91    | −141.69         | **682.22**   |
+| 500                      | 250                      | 0          | 200ms | 15.00%                                       | 698.97    | −327.12         | **371.85**   |
+| 500                      | 300                      | 0          | 50ms  | 16.00%                                       | 1301.03   | −3000.00        | **−1698.97** |
+| 0                        | 500                      | 1000       | 5ms   | 30.00%                                       | 2301.03   | −3000.00        | **−698.97**  |
+| 0                        | 0                        | 5000       | 500ms | 100.00%                                      | 301.03    | −3000.00        | **−2698.97** |
 
 Three quick takeaways:
 

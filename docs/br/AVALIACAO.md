@@ -32,17 +32,17 @@ Essas cinco contagens, junto com a latência observada, alimentam a fórmula des
 
 Às vezes é mais fácil entender a pontuação observando casos concretos do que a fórmula. A tabela abaixo antecipa nove cenários, todos com N = 5000 requisições, indo do melhor caso ao pior — incluindo o ponto em que o corte de 15% passa a valer. Os detalhes de cada coluna são explicados nas próximas seções; por enquanto, basta saber que `final_score` é a pontuação final, soma de um score de latência (`p99_score`) e um score de detecção (`detection_score`).
 
-| detecção falsa positiva | detecção falsa negativa | erro HTTP | p99   | falhas / total de requisições | score p99 | score detecção | score final  |
-|-------------------------|-------------------------|-----------|-------|-------------------------------|-----------|----------------|--------------|
-| 0                       | 0                       | 0         | 1ms   | 0,00%                         | 3000,00   | 3000,00        | **6000,00**  |
-| 5                       | 5                       | 0         | 3ms   | 0,20%                         | 2522,88   | 2001,27        | **4524,15**  |
-| 30                      | 20                      | 0         | 10ms  | 1,00%                         | 2000,00   | 1157,02        | **3157,02**  |
-| 80                      | 50                      | 0         | 50ms  | 2,60%                         | 1301,03   | 628,16         | **1929,19**  |
-| 200                     | 150                     | 50        | 150ms | 8,00%                         | 823,91    | −141,69        | **682,22**   |
-| 500                     | 250                     | 0         | 200ms | 15,00%                        | 698,97    | −327,12        | **371,85**   |
-| 500                     | 300                     | 0         | 50ms  | 16,00%                        | 1301,03   | −3000,00       | **−1698,97** |
-| 0                       | 500                     | 1000      | 5ms   | 30,00%                        | 2301,03   | −3000,00       | **−698,97**  |
-| 0                       | 0                       | 5000      | 500ms | 100,00%                       | 301,03    | −3000,00       | **−2698,97** |
+| detecção falsa positiva | detecção falsa negativa | erro HTTP | p99   | falhas (detecção + HTTP) / total de requisições | score p99 | score detecção | score final  |
+|-------------------------|-------------------------|-----------|-------|-------------------------------------------------|-----------|----------------|--------------|
+| 0                       | 0                       | 0         | 1ms   | 0,00%                                           | 3000,00   | 3000,00        | **6000,00**  |
+| 5                       | 5                       | 0         | 3ms   | 0,20%                                           | 2522,88   | 2001,27        | **4524,15**  |
+| 30                      | 20                      | 0         | 10ms  | 1,00%                                           | 2000,00   | 1157,02        | **3157,02**  |
+| 80                      | 50                      | 0         | 50ms  | 2,60%                                           | 1301,03   | 628,16         | **1929,19**  |
+| 200                     | 150                     | 50        | 150ms | 8,00%                                           | 823,91    | −141,69        | **682,22**   |
+| 500                     | 250                     | 0         | 200ms | 15,00%                                          | 698,97    | −327,12        | **371,85**   |
+| 500                     | 300                     | 0         | 50ms  | 16,00%                                          | 1301,03   | −3000,00       | **−1698,97** |
+| 0                       | 500                     | 1000      | 5ms   | 30,00%                                          | 2301,03   | −3000,00       | **−698,97**  |
+| 0                       | 0                       | 5000      | 500ms | 100,00%                                         | 301,03    | −3000,00       | **−2698,97** |
 
 Três leituras rápidas da tabela:
 

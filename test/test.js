@@ -76,8 +76,87 @@ export default function () {
     }
 }
 
+function renderSummaryTable(s) {
+    const WIDTH = 62;
+    const LABEL_W = 42;
+    const VALUE_W = WIDTH - LABEL_W - 5; // borders + separator
+
+    const top    = '┌' + '─'.repeat(WIDTH - 2) + '┐';
+    const sep    = '├' + '─'.repeat(LABEL_W) + '┬' + '─'.repeat(VALUE_W) + '┤';
+    const midRow = '├' + '─'.repeat(LABEL_W) + '┼' + '─'.repeat(VALUE_W) + '┤';
+    const bot    = '└' + '─'.repeat(LABEL_W) + '┴' + '─'.repeat(VALUE_W) + '┘';
+
+    const header = (text) => '│' + center(text, WIDTH - 2) + '│';
+    const section = (text) => '│' + padRight(' ' + text, LABEL_W) + '┤' + ' '.repeat(VALUE_W) + '│';
+    const row = (label, value) =>
+        '│' + padRight('  ' + label, LABEL_W) + '│' + padLeft(String(value) + ' ', VALUE_W) + '│';
+
+    const fmtNum = (n, d = 2) => (Number.isFinite(n) ? n.toFixed(d) : '—');
+    const yn = (b) => (b ? 'YES' : 'no');
+
+    const lines = [
+        top,
+        header('FRAUD-SCORE — TEST RESULT'),
+        sep,
+        row('FINAL SCORE', fmtNum(s.finalScore)),
+        midRow,
+
+        section('P99 latency score'),
+        midRow,
+        row('score', fmtNum(s.p99Score)),
+        row('p99', fmtNum(s.p99) + ' ms'),
+        row('cut triggered (p99 > 2000ms)', yn(s.p99CutTriggered)),
+        midRow,
+
+        section('Detection score'),
+        midRow,
+        row('score', fmtNum(s.detScore)),
+        row('rate component', s.cutTriggered ? '—' : fmtNum(s.rateComponent)),
+        row('absolute penalty', s.cutTriggered ? '—' : fmtNum(s.absolutePenalty)),
+        row('cut triggered (failures > 15%)', yn(s.cutTriggered)),
+        midRow,
+
+        section('Detections'),
+        midRow,
+        row('true positive  (fraud denied)', s.tp),
+        row('true negative  (legit approved)', s.tn),
+        row('false positive (legit denied)', s.fp),
+        row('false negative (fraud approved)', s.fn),
+        row('http errors', s.errs),
+        midRow,
+
+        section('Stats'),
+        midRow,
+        row('total requests (N)', s.N),
+        row('failure rate', (s.failureRate * 100).toFixed(2) + ' %'),
+        row('weighted errors (E)', s.E),
+        row('error rate (ε = E/N)', fmtNum(s.epsilon, 6)),
+        bot,
+    ];
+
+    return lines.join('\n');
+}
+
+function padRight(str, width) {
+    const s = String(str);
+    return s.length >= width ? s.slice(0, width) : s + ' '.repeat(width - s.length);
+}
+
+function padLeft(str, width) {
+    const s = String(str);
+    return s.length >= width ? s.slice(-width) : ' '.repeat(width - s.length) + s;
+}
+
+function center(str, width) {
+    const s = String(str);
+    if (s.length >= width) return s.slice(0, width);
+    const left = Math.floor((width - s.length) / 2);
+    const right = width - s.length - left;
+    return ' '.repeat(left) + s + ' '.repeat(right);
+}
+
 export function handleSummary(data) {
-    // Constantes do scoring (ver docs/superpowers/specs/2026-04-22-logarithmic-scoring-design.md)
+
     const K = 1000;
     const T_MAX_MS = 1000;
     const P99_MIN_MS = 1;
@@ -134,6 +213,22 @@ export function handleSummary(data) {
 
     const finalScore = p99Score + detScore;
 
+    const summaryTable = renderSummaryTable({
+        finalScore,
+        p99,
+        p99Score,
+        p99CutTriggered,
+        detScore,
+        rateComponent,
+        absolutePenalty,
+        cutTriggered,
+        tp, tn, fp, fn, errs,
+        N,
+        failureRate,
+        E,
+        epsilon,
+    });
+
     const result = {
         expected: expectedStats,
         p99: p99.toFixed(2) + 'ms',
@@ -159,6 +254,7 @@ export function handleSummary(data) {
                 cut_triggered: cutTriggered,
             },
             final_score: +finalScore.toFixed(2),
+            final_score_table: summaryTable,
         },
     };
 

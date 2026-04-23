@@ -30,52 +30,56 @@ Essas cinco contagens, junto com a latência observada, alimentam a fórmula des
 
 ## Exemplos de pontuação
 
-Às vezes é mais fácil entender a pontuação observando casos concretos do que a fórmula. A tabela abaixo antecipa 20 cenários, todos com N = 5000 requisições, ordenados do melhor caso ao pior — incluindo o ponto em que o corte de 15% passa a valer e alguns extremos além disso. Os detalhes de cada coluna são explicados nas próximas seções; por enquanto, basta saber que `final_score` é a pontuação final, soma de um score de latência (`p99_score`) e um score de detecção (`detection_score`).
+Às vezes é mais fácil entender a pontuação observando casos concretos do que a fórmula. A tabela abaixo antecipa 20 cenários, todos com N = 5000 requisições, ordenados do melhor caso ao pior — incluindo os dois cortes (falhas > 15% e p99 > 2000ms) e os extremos onde eles disparam juntos. Os detalhes de cada coluna são explicados nas próximas seções; por enquanto, basta saber que `final_score` é a pontuação final, soma de um score de latência (`p99_score`) e um score de detecção (`detection_score`).
 
 | detecção falsa positiva | detecção falsa negativa | erro HTTP | falhas (detecção + HTTP) / total de requisições | p99      | score p99 | score detecção | score final  |
 |-------------------------|-------------------------|-----------|-------------------------------------------------|----------|-----------|----------------|--------------|
-| 0                       | 0                       | 0         | 0,00%                                           | 0,1ms    | 4000,00   | 3000,00        | **7000,00**  |
 | 0                       | 0                       | 0         | 0,00%                                           | 1ms      | 3000,00   | 3000,00        | **6000,00**  |
-| 2                       | 2                       | 0         | 0,08%                                           | 0,5ms    | 3301,03   | 2509,61        | **5810,64**  |
-| 5                       | 2                       | 0         | 0,14%                                           | 0,8ms    | 3096,91   | 2333,82        | **5430,73**  |
+| 2                       | 2                       | 0         | 0,08%                                           | 0,5ms    | 3000,00   | 2509,61        | **5509,61**  |
 | 5                       | 5                       | 0         | 0,20%                                           | 3ms      | 2522,88   | 2001,27        | **4524,15**  |
 | 10                      | 5                       | 0         | 0,30%                                           | 5ms      | 2301,03   | 1876,54        | **4177,57**  |
 | 0                       | 0                       | 0         | 0,00%                                           | 100ms    | 1000,00   | 3000,00        | **4000,00**  |
 | 30                      | 20                      | 0         | 1,00%                                           | 10ms     | 2000,00   | 1157,02        | **3157,02**  |
 | 20                      | 10                      | 5         | 0,70%                                           | 15ms     | 1823,91   | 1259,66        | **3083,57**  |
+| 0                       | 0                       | 0         | 0,00%                                           | 1000ms   | 0,00      | 3000,00        | **3000,00**  |
 | 80                      | 50                      | 0         | 2,60%                                           | 50ms     | 1301,03   | 628,16         | **1929,19**  |
 | 50                      | 30                      | 20        | 2,00%                                           | 80ms     | 1096,91   | 604,15         | **1701,06**  |
 | 100                     | 50                      | 0         | 3,00%                                           | 300ms    | 522,88    | 581,13         | **1104,01**  |
 | 200                     | 150                     | 50        | 8,00%                                           | 150ms    | 823,91    | −141,69        | **682,22**   |
 | 500                     | 250                     | 0         | 15,00%                                          | 200ms    | 698,97    | −327,12        | **371,85**   |
+| 0                       | 0                       | 0         | 0,00%                                           | 3000ms   | −3000,00  | 3000,00        | **0,00**     |
 | 0                       | 500                     | 1000      | 30,00%                                          | 5ms      | 2301,03   | −3000,00       | **−698,97**  |
 | 500                     | 300                     | 0         | 16,00%                                          | 10ms     | 2000,00   | −3000,00       | **−1000,00** |
 | 500                     | 300                     | 0         | 16,00%                                          | 50ms     | 1301,03   | −3000,00       | **−1698,97** |
 | 0                       | 0                       | 5000      | 100,00%                                         | 500ms    | 301,03    | −3000,00       | **−2698,97** |
 | 800                     | 100                     | 0         | 18,00%                                          | 1000ms   | 0,00      | −3000,00       | **−3000,00** |
-| 0                       | 0                       | 5000      | 100,00%                                         | 60000ms  | −1778,15  | −3000,00       | **−4778,15** |
+| 0                       | 0                       | 5000      | 100,00%                                         | 60000ms  | −3000,00  | −3000,00       | **−6000,00** |
 
 Quatro leituras rápidas da tabela:
 
-- O `p99_score` vai de 4000 (p99 = 0,1ms) até −1778 (p99 = 60s) ao longo das linhas, sem descontinuidades. Note que ele pode ficar negativo sozinho quando p99 > 1000ms — a última linha mostra exatamente isso.
-- O `detection_score` é livre até a taxa de falhas de 15%. A partir daí, fica fixo em −3000. A descontinuidade aparece entre a linha de 15,00% e a próxima com mais de 15% (no caso, a de 30,00% com p99 muito baixo).
-- Mesmo um p99 excelente não compensa o corte: a linha com p99 = 5ms e 30% de falhas termina em `−698,97`, enquanto a linha com p99 = 10ms e 1,00% de falhas termina em `3157,02`. A primeira é 2× mais rápida e ainda perde por quase 4000 pontos.
-- O `final_score` **não tem piso** igual ao `detection_score`: com p99 muito alto (ex.: 60s, timeout) e corte ativo, a pontuação passa de −4700. A linha com `final = −3000,00` exato ocorre quando p99 = 1000ms (o `p99_score` vira zero) e o corte está ativo.
+- O `p99_score` tem teto em 3000 (p99 ≤ 1ms) e piso em −3000 (p99 > 2000ms). Entre os dois limites, cresce log com a latência — cada 10× mais rápido rende +1000 pontos.
+- O `detection_score` é livre até a taxa de falhas de 15%. A partir daí, é fixado em −3000. A descontinuidade aparece entre a linha de 15,00% e a próxima com mais de 15%.
+- Mesmo um p99 excelente não compensa o corte de falhas: a linha com p99 = 5ms e 30% de falhas termina em `−698,97`, enquanto a linha com p99 = 10ms e 1,00% de falhas termina em `3157,02`. A primeira é 2× mais rápida e ainda perde por quase 4000 pontos.
+- Os dois cortes se cancelam em alguns casos de borda: a linha com p99 = 3000ms e zero falhas termina em `0` (o corte de p99 anula o score de detecção perfeito). Quando ambos os cortes disparam (última linha), o `final_score` atinge o piso absoluto de −6000.
 
 ## Fórmula da pontuação
 
-A pontuação final é a soma de dois componentes independentes: um para latência (p99) e outro para qualidade de detecção. Ambos usam função logarítmica — a ideia é recompensar cada ordem de grandeza de melhoria na mesma medida, em vez de diferenças absolutas. O componente de detecção tem, adicionalmente, uma regra de corte: se a taxa de falhas ultrapassar 15%, seu valor é fixado em −3000, o que anula por completo o score máximo de latência.
+A pontuação final é a soma de dois componentes independentes: um para latência (p99) e outro para qualidade de detecção. Ambos usam função logarítmica — a ideia é recompensar cada ordem de grandeza de melhoria na mesma medida, em vez de diferenças absolutas. Os dois componentes têm teto de +3000 e piso de −3000, aplicados por regras específicas descritas abaixo.
 
 ### Latência — `score_p99`
 
 ```
-score_p99 = K · log₁₀(T_max / p99)
+Se p99 > p99_MAX:
+    score_p99 = −3000                         ← corte ativo
+Senão:
+    score_p99 = K · log₁₀(T_max / max(p99, p99_MIN))
 ```
 
-- `K = 1000`, `T_max = 1000ms`.
-- Sem teto e sem piso: p99 baixo continua acumulando pontos; p99 acima de 1000ms resulta em pontuação negativa.
+- `K = 1000`, `T_max = 1000ms`, `p99_MIN = 1ms`, `p99_MAX = 2000ms`.
+- Teto em +3000: quando `p99 ≤ 1ms`, o score satura em 3000 — melhorias abaixo disso não somam pontos.
+- Piso em −3000: quando `p99 > 2000ms`, o score é fixado em −3000.
 
-Na prática, cada 10× de melhoria na latência vale +1000 pontos. De 100ms para 10ms: +1000. De 10ms para 1ms: outros +1000. Diferente da fórmula anterior, não existe um alvo após o qual melhorias deixem de contar — a pontuação continua crescendo enquanto a latência diminui.
+Na prática, dentro da região sem corte, cada 10× de melhoria na latência vale +1000 pontos. De 100ms para 10ms: +1000. De 10ms para 1ms: outros +1000. De 1ms para baixo, a pontuação satura em 3000.
 
 ### Detecção — `score_det`
 
@@ -109,14 +113,18 @@ score_final = score_p99 + score_det
 
 Soma direta, sem multiplicação. As duas dimensões são independentes, e qualquer uma delas pode ser negativa isoladamente.
 
-Máximo de referência: **~6000 pontos** (3000 + 3000), com p99 próximo de 1ms e `E = 0`. O `score_det` tem teto fixo em 3000 (imposto por `ε_MIN`); o `score_p99`, não — quanto menor o p99, mais pontos, sem limite superior.
+- **Máximo: +6000 pontos** (+3000 + +3000), com p99 ≤ 1ms e `E = 0`.
+- **Mínimo: −6000 pontos** (−3000 − 3000), com p99 > 2000ms e taxa de falhas > 15%.
+
+Ambos os componentes têm teto em +3000 e piso em −3000, aplicados por mecanismos diferentes: no lado da latência, via `p99_MIN` e `p99_MAX`; no lado da detecção, via `ε_MIN` e corte de falhas. Isso garante que cada componente contribui entre −3000 e +3000, e que o total fica confinado em [−6000, +6000].
 
 ## Pesos e parâmetros — por quê
 
 A motivação por trás de cada escolha:
 
 - **FN vale 3, Err vale 5** (em `E`) — mantém a mesma ordem de magnitude do scoring anterior: deixar uma fraude passar é três vezes pior do que bloquear um cliente legítimo, e devolver HTTP 5xx é ainda pior do que qualquer erro de detecção.
-- **Log na latência** — recompensa cada ordem de grandeza de melhoria na mesma medida. Reduzir 90ms em um backend que está em 100ms vale o mesmo que reduzir 9ms em um que está em 10ms. Diferente da fórmula anterior, **não satura**: p99 abaixo de 10ms continua gerando pontos.
+- **Log na latência** — recompensa cada ordem de grandeza de melhoria na mesma medida. Reduzir 90ms em um backend que está em 100ms vale o mesmo que reduzir 9ms em um que está em 10ms.
+- **Teto em p99 = 1ms e piso em p99 = 2000ms** — simetria com os limites da detecção. Otimizar abaixo de 1ms deixa de render pontos (diminishing returns nessa faixa); p99 acima de 2s é tratado como backend inviável e corta o score direto para −3000.
 - **Termo da taxa + penalidade absoluta** — a taxa é justa entre testes de tamanhos diferentes; a penalidade absoluta reforça que cada erro representa um prejuízo real. Juntos, incentivam qualidade em proporção **e** em volume.
 - **Corte em 15% de falhas** — o objetivo não é aplicar uma penalidade proporcional, e sim anular o resultado. Um backend com taxa de falhas nesse patamar não deveria pontuar apenas por ter p99 baixo.
 
@@ -140,7 +148,10 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se se
     "failure_rate": "1.10%",
     "weighted_errors_E": 85,
     "error_rate_epsilon": 0.017,
-    "p99_score": 2235.83,
+    "p99_score": {
+      "value": 2235.83,
+      "cut_triggered": false
+    },
     "detection_score": {
       "value": 1189.20,
       "rate_component": 1769.55,
@@ -154,24 +165,27 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se se
 
 - `breakdown` — contagens brutas de TP, TN, FP, FN e HTTP errors.
 - `detection_accuracy` — `(TP + TN) / (TP + TN + FP + FN)`. Informativo, não entra no score.
-- `failure_rate` — `(FP + FN + Err) / N`. Se passar de 15%, o corte dispara.
+- `failure_rate` — `(FP + FN + Err) / N`. Se passar de 15%, o corte de detecção dispara.
 - `weighted_errors_E` — `1·FP + 3·FN + 5·Err`. Entra no cálculo de `ε` e na penalidade absoluta.
 - `error_rate_epsilon` — `E / N`. A taxa ponderada que alimenta o termo log.
-- `p99_score` — `K · log₁₀(T_max / p99)`.
-- `detection_score.value` — o score_det final (depois do corte se disparou).
+- `p99_score.value` — score de latência final (depois do corte, se disparou).
+- `p99_score.cut_triggered` — `true` se `p99 > 2000ms` e o score caiu para −3000.
+- `detection_score.value` — score de detecção final (depois do corte, se disparou).
 - `detection_score.rate_component` — só o termo `K · log₁₀(1/ε)`. É `null` quando o corte dispara.
 - `detection_score.absolute_penalty` — só o termo `−β · log₁₀(1 + E)`. É `null` quando o corte dispara.
 - `detection_score.cut_triggered` — `true` se `failure_rate > 15%` e o score caiu para −3000.
-- `final_score` — `p99_score + detection_score.value`. O número que importa.
+- `final_score` — `p99_score.value + detection_score.value`. O número que importa.
 
 
 ## Estratégias (dicas)
 
 Algumas observações que podem ser úteis.
 
-**O log favorece p99 muito baixo.** Reduzir a latência de 10ms para 1ms rende +1000 pontos no `p99_score`. Cada milissegundo a menos continua valendo — não há alvo de saturação.
+**O log favorece p99 baixo, até 1ms.** Reduzir a latência de 10ms para 1ms rende +1000 pontos no `p99_score`. Abaixo de 1ms, a pontuação satura em 3000 — otimizar além desse ponto não rende pontos adicionais.
 
-**O corte em 15% é rígido.** Se mais de 15% das requisições falham (somando FP, FN e erros HTTP), o `detection_score` é fixado em −3000 e anula qualquer ganho obtido no p99. Ficar longe da zona de corte é mais importante do que ganhar as últimas casas decimais de acurácia.
+**O corte em 15% de falhas é rígido.** Se mais de 15% das requisições falham (somando FP, FN e erros HTTP), o `detection_score` é fixado em −3000 e anula qualquer ganho obtido no p99. Ficar longe da zona de corte é mais importante do que ganhar as últimas casas decimais de acurácia.
+
+**O corte em p99 > 2000ms dificilmente dispara isolado.** O limite de 2s existe como piso rígido para o score de latência, mas na prática é difícil chegar a um p99 desse tamanho sem antes acumular erros de conexão — e esses erros já empurram a `failure_rate` acima de 15%, disparando primeiro o corte de detecção. Considere o corte de p99 como um backstop, não como algo comum de ver isoladamente.
 
 **HTTP 500 tem impacto duplo.** Entra no `E` com peso 5 (contra 1 de um FP) e também conta na `failure_rate` (cada Err equivale a uma falha bruta, como FP ou FN). Se algo der errado no backend, **devolver uma resposta rápida qualquer** (por exemplo, `approved: true`, `fraud_score: 0.0`) evita o erro HTTP ao custo de subir FP ou FN. No regime normal, a penalidade de `−1` (FP) ou `−3` (FN) no peso logarítmico é menor do que `−5` (Err) acrescido de mais um ponto na `failure_rate`.
 

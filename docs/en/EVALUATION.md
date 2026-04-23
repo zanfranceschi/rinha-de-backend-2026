@@ -30,52 +30,56 @@ These five counts, together with the observed latency, feed the formula describe
 
 ## Scoring examples
 
-Sometimes it's easier to understand the scoring by looking at concrete cases than by reading the formula. The table below previews 20 scenarios, all with N = 5000 requests, ordered from the best case down to the worst — including the point where the 15% cutoff kicks in and some extremes beyond it. The details of each column are explained in the next sections; for now, it's enough to know that `final_score` is the final score, the sum of a latency score (`p99_score`) and a detection score (`detection_score`).
+Sometimes it's easier to understand the scoring by looking at concrete cases than by reading the formula. The table below previews 20 scenarios, all with N = 5000 requests, ordered from the best case down to the worst — including both cutoffs (failures > 15% and p99 > 2000ms) and the extremes where they both trigger together. The details of each column are explained in the next sections; for now, it's enough to know that `final_score` is the final score, the sum of a latency score (`p99_score`) and a detection score (`detection_score`).
 
 | false positive detection | false negative detection | HTTP error | failures (detection + HTTP) / total requests | p99      | p99 score | detection score | final score  |
 |--------------------------|--------------------------|------------|----------------------------------------------|----------|-----------|-----------------|--------------|
-| 0                        | 0                        | 0          | 0.00%                                        | 0.1ms    | 4000.00   | 3000.00         | **7000.00**  |
 | 0                        | 0                        | 0          | 0.00%                                        | 1ms      | 3000.00   | 3000.00         | **6000.00**  |
-| 2                        | 2                        | 0          | 0.08%                                        | 0.5ms    | 3301.03   | 2509.61         | **5810.64**  |
-| 5                        | 2                        | 0          | 0.14%                                        | 0.8ms    | 3096.91   | 2333.82         | **5430.73**  |
+| 2                        | 2                        | 0          | 0.08%                                        | 0.5ms    | 3000.00   | 2509.61         | **5509.61**  |
 | 5                        | 5                        | 0          | 0.20%                                        | 3ms      | 2522.88   | 2001.27         | **4524.15**  |
 | 10                       | 5                        | 0          | 0.30%                                        | 5ms      | 2301.03   | 1876.54         | **4177.57**  |
 | 0                        | 0                        | 0          | 0.00%                                        | 100ms    | 1000.00   | 3000.00         | **4000.00**  |
 | 30                       | 20                       | 0          | 1.00%                                        | 10ms     | 2000.00   | 1157.02         | **3157.02**  |
 | 20                       | 10                       | 5          | 0.70%                                        | 15ms     | 1823.91   | 1259.66         | **3083.57**  |
+| 0                        | 0                        | 0          | 0.00%                                        | 1000ms   | 0.00      | 3000.00         | **3000.00**  |
 | 80                       | 50                       | 0          | 2.60%                                        | 50ms     | 1301.03   | 628.16          | **1929.19**  |
 | 50                       | 30                       | 20         | 2.00%                                        | 80ms     | 1096.91   | 604.15          | **1701.06**  |
 | 100                      | 50                       | 0          | 3.00%                                        | 300ms    | 522.88    | 581.13          | **1104.01**  |
 | 200                      | 150                      | 50         | 8.00%                                        | 150ms    | 823.91    | −141.69         | **682.22**   |
 | 500                      | 250                      | 0          | 15.00%                                       | 200ms    | 698.97    | −327.12         | **371.85**   |
+| 0                        | 0                        | 0          | 0.00%                                        | 3000ms   | −3000.00  | 3000.00         | **0.00**     |
 | 0                        | 500                      | 1000       | 30.00%                                       | 5ms      | 2301.03   | −3000.00        | **−698.97**  |
 | 500                      | 300                      | 0          | 16.00%                                       | 10ms     | 2000.00   | −3000.00        | **−1000.00** |
 | 500                      | 300                      | 0          | 16.00%                                       | 50ms     | 1301.03   | −3000.00        | **−1698.97** |
 | 0                        | 0                        | 5000       | 100.00%                                      | 500ms    | 301.03    | −3000.00        | **−2698.97** |
 | 800                      | 100                      | 0          | 18.00%                                       | 1000ms   | 0.00      | −3000.00        | **−3000.00** |
-| 0                        | 0                        | 5000       | 100.00%                                      | 60000ms  | −1778.15  | −3000.00        | **−4778.15** |
+| 0                        | 0                        | 5000       | 100.00%                                      | 60000ms  | −3000.00  | −3000.00        | **−6000.00** |
 
 Four quick takeaways:
 
-- `p99_score` ranges from 4000 (p99 = 0.1ms) down to −1778 (p99 = 60s) across the rows, without discontinuities. It can go negative on its own when p99 > 1000ms — the last row shows exactly that.
-- `detection_score` is unconstrained up to a 15% failure rate. Beyond that, it is pinned at −3000. The discontinuity shows between the 15.00% row and the next row with a failure rate above 15%.
-- Even excellent latency does not offset the cutoff: the row with p99 = 5ms and a 30% failure rate ends at `−698.97`, while the row with p99 = 10ms and a 1.00% failure rate ends at `3157.02`. The first is 2× faster and still loses by nearly 4000 points.
-- `final_score` **has no floor** the way `detection_score` does: with a very high p99 (e.g., 60s timeout) and the cutoff active, it drops below −4700. The row with `final = −3000.00` exactly happens when p99 = 1000ms (so `p99_score` is zero) and the cutoff is active.
+- `p99_score` has a ceiling of +3000 (p99 ≤ 1ms) and a floor of −3000 (p99 > 2000ms). Between the two limits, it grows logarithmically with latency — every 10× faster is worth +1000 points.
+- `detection_score` is unconstrained up to a 15% failure rate. Beyond that, it is pinned at −3000. The discontinuity appears between the 15.00% row and the next row with a failure rate above 15%.
+- Excellent latency does not offset the failure cutoff: the row with p99 = 5ms and a 30% failure rate ends at `−698.97`, while the row with p99 = 10ms and a 1.00% failure rate ends at `3157.02`. The first is 2× faster and still loses by nearly 4000 points.
+- The two cutoffs cancel each other in some corner cases: the row with p99 = 3000ms and zero failures ends at `0` (the p99 cutoff offsets a perfect detection score). When both cutoffs fire (last row), `final_score` hits the absolute floor of −6000.
 
 ## Scoring formula
 
-The final score is the sum of two independent components: one for latency (p99) and one for detection quality. Both use a logarithmic function — the idea is to reward each order-of-magnitude improvement equally, rather than absolute differences. The detection component has one additional rule: if the failure rate exceeds 15%, its value is fixed at −3000, which fully offsets the best possible latency score.
+The final score is the sum of two independent components: one for latency (p99) and one for detection quality. Both use a logarithmic function — the idea is to reward each order-of-magnitude improvement equally, rather than absolute differences. Both components have a ceiling of +3000 and a floor of −3000, applied by specific rules described below.
 
 ### Latency — `score_p99`
 
 ```
-score_p99 = K · log₁₀(T_max / p99)
+If p99 > p99_MAX:
+    score_p99 = −3000                          ← cutoff active
+Else:
+    score_p99 = K · log₁₀(T_max / max(p99, p99_MIN))
 ```
 
-- `K = 1000`, `T_max = 1000ms`.
-- No cap, no floor: low p99 keeps accumulating points; p99 above 1000ms produces a negative score.
+- `K = 1000`, `T_max = 1000ms`, `p99_MIN = 1ms`, `p99_MAX = 2000ms`.
+- Ceiling of +3000: when `p99 ≤ 1ms`, the score saturates at 3000 — improvements beyond that don't add points.
+- Floor of −3000: when `p99 > 2000ms`, the score is fixed at −3000.
 
-In practice, every 10× improvement in latency is worth +1000 points. From 100ms to 10ms: +1000. From 10ms to 1ms: another +1000. Unlike the previous formula, there is no target after which improvements stop counting — the score keeps growing as latency decreases.
+In practice, within the non-cutoff region, every 10× improvement in latency is worth +1000 points. From 100ms to 10ms: +1000. From 10ms to 1ms: another +1000. Below 1ms, the score saturates at 3000.
 
 ### Detection — `score_det`
 
@@ -109,14 +113,18 @@ final_score = score_p99 + score_det
 
 Simple sum, no multiplication. The two dimensions are independent, and either one can be negative on its own.
 
-Reference max: **~6000 points** (3000 + 3000), with p99 near 1ms and `E = 0`. `score_det` has a fixed ceiling of 3000 (imposed by `ε_MIN`); `score_p99` does not — the lower the p99, the more points, without an upper bound.
+- **Maximum: +6000 points** (+3000 + +3000), with p99 ≤ 1ms and `E = 0`.
+- **Minimum: −6000 points** (−3000 − 3000), with p99 > 2000ms and failure rate > 15%.
+
+Both components have a ceiling of +3000 and a floor of −3000, applied via different mechanisms: on the latency side, via `p99_MIN` and `p99_MAX`; on the detection side, via `ε_MIN` and the failure cutoff. This guarantees each component contributes between −3000 and +3000, and the total stays confined to [−6000, +6000].
 
 ## Weights and parameters — why
 
 The reasoning behind each choice:
 
 - **FN worth 3, Err worth 5** (inside `E`) — keeps the same order of magnitude as the previous scoring: letting a fraud through is three times worse than blocking a legitimate customer, and returning HTTP 5xx is worse still than any detection error.
-- **Log on latency** — rewards each order-of-magnitude improvement equally. Shaving 90ms off a backend at 100ms is worth the same as shaving 9ms off one at 10ms. Unlike the previous formula, it **does not saturate**: p99 below 10ms keeps earning points.
+- **Log on latency** — rewards each order-of-magnitude improvement equally. Shaving 90ms off a backend at 100ms is worth the same as shaving 9ms off one at 10ms.
+- **Ceiling at p99 = 1ms and floor at p99 = 2000ms** — symmetric with the detection limits. Optimizing below 1ms stops earning points (diminishing returns in that range); p99 above 2s is treated as an unviable backend and cuts the score straight to −3000.
 - **Rate term + absolute penalty** — the rate is fair across test sizes of different scales; the absolute penalty reinforces that each error represents a real loss. Together, they reward quality in both proportion **and** volume.
 - **15% failure cutoff** — the intent is not to apply a proportional penalty, but to nullify the result. A backend with a failure rate at that level should not score points simply by having low p99.
 
@@ -140,7 +148,10 @@ If you run the test locally, a `results.json` file will be generated. If your te
     "failure_rate": "1.10%",
     "weighted_errors_E": 85,
     "error_rate_epsilon": 0.017,
-    "p99_score": 2235.83,
+    "p99_score": {
+      "value": 2235.83,
+      "cut_triggered": false
+    },
     "detection_score": {
       "value": 1189.20,
       "rate_component": 1769.55,
@@ -154,24 +165,27 @@ If you run the test locally, a `results.json` file will be generated. If your te
 
 - `breakdown` — raw counts of TP, TN, FP, FN and HTTP errors.
 - `detection_accuracy` — `(TP + TN) / (TP + TN + FP + FN)`. Informational only.
-- `failure_rate` — `(FP + FN + Err) / N`. Crosses 15% → cutoff triggers.
+- `failure_rate` — `(FP + FN + Err) / N`. Crosses 15% → detection cutoff triggers.
 - `weighted_errors_E` — `1·FP + 3·FN + 5·Err`. Feeds `ε` and the absolute penalty.
 - `error_rate_epsilon` — `E / N`. Weighted rate used in the log term.
-- `p99_score` — `K · log₁₀(T_max / p99)`.
-- `detection_score.value` — final score_det (after cutoff if it triggered).
+- `p99_score.value` — final latency score (after cutoff if it triggered).
+- `p99_score.cut_triggered` — `true` if `p99 > 2000ms` and the score dropped to −3000.
+- `detection_score.value` — final detection score (after cutoff if it triggered).
 - `detection_score.rate_component` — just the `K · log₁₀(1/ε)` term. `null` when the cutoff triggered.
 - `detection_score.absolute_penalty` — just the `−β · log₁₀(1 + E)` term. `null` when the cutoff triggered.
 - `detection_score.cut_triggered` — `true` if `failure_rate > 15%` and the score dropped to −3000.
-- `final_score` — `p99_score + detection_score.value`. The number that counts.
+- `final_score` — `p99_score.value + detection_score.value`. The number that counts.
 
 
 ## Strategies (tips)
 
 Some observations that may be useful.
 
-**The log favors very low p99.** Reducing latency from 10ms to 1ms is worth +1000 points in `p99_score`. Every millisecond below that keeps counting — there is no saturation target.
+**The log favors low p99, down to 1ms.** Reducing latency from 10ms to 1ms is worth +1000 points in `p99_score`. Below 1ms, the score saturates at 3000 — optimizing beyond that point doesn't earn additional points.
 
-**The 15% cutoff is strict.** If more than 15% of requests fail (summing FP, FN, and HTTP errors), `detection_score` is fixed at −3000 and cancels any p99 gain. Staying away from the cutoff zone matters more than tuning the last decimals of accuracy.
+**The 15% failure cutoff is strict.** If more than 15% of requests fail (summing FP, FN, and HTTP errors), `detection_score` is fixed at −3000 and cancels any p99 gain. Staying away from the cutoff zone matters more than tuning the last decimals of accuracy.
+
+**The p99 > 2000ms cutoff rarely fires on its own.** The 2s limit exists as a hard floor for the latency score, but in practice it's hard to reach a p99 that high without first accumulating connection errors — and those errors push `failure_rate` above 15%, triggering the detection cutoff first. Treat the p99 cutoff as a backstop, not something you'll commonly see in isolation.
 
 **HTTP 500 has a double impact.** It enters `E` with weight 5 (against FP's 1) and also counts in `failure_rate` (each Err is a raw failure, equivalent to an FP or FN). If something goes wrong in the backend, **returning any quick response** (e.g., `approved: true`, `fraud_score: 0.0`) avoids the HTTP error at the cost of raising FP or FN. In the normal regime, the penalty of `−1` (FP) or `−3` (FN) in the log weight is smaller than `−5` (Err) plus an extra point in `failure_rate`.
 

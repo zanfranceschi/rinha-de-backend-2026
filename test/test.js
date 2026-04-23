@@ -80,9 +80,12 @@ export function handleSummary(data) {
     // Constantes do scoring (ver docs/superpowers/specs/2026-04-22-logarithmic-scoring-design.md)
     const K = 1000;
     const T_MAX_MS = 1000;
+    const P99_MIN_MS = 1;
+    const P99_MAX_MS = 2000;
     const EPSILON_MIN = 0.001;
     const BETA = 300;
     const TX_CORTE = 0.15;
+    const SCORE_P99_CORTE = -3000;
     const SCORE_DET_CORTE = -3000;
 
     const httpDuration = data.metrics.http_req_duration.values;
@@ -104,8 +107,18 @@ export function handleSummary(data) {
     const epsilon = N > 0 ? E / N : 0;
     const failureRate = N > 0 ? failures / N : 0;
 
-    // Score P99 (log, sem piso). p99=0 = nenhuma resposta completou; retorna 0 pra evitar Infinity no JSON.
-    const p99Score = p99 > 0 ? K * Math.log10(T_MAX_MS / p99) : 0;
+    // Score P99 (log, com teto em P99_MIN_MS e corte em P99_MAX_MS).
+    // p99=0 = nenhuma resposta completou; retorna 0 pra evitar Infinity no JSON.
+    let p99Score;
+    let p99CutTriggered = false;
+    if (p99 <= 0) {
+        p99Score = 0;
+    } else if (p99 > P99_MAX_MS) {
+        p99Score = SCORE_P99_CORTE;
+        p99CutTriggered = true;
+    } else {
+        p99Score = K * Math.log10(T_MAX_MS / Math.max(p99, P99_MIN_MS));
+    }
 
     // Score detecção (log com penalidade absoluta, ou corte em -3000 se falhas > 15%)
     let detScore;
@@ -144,7 +157,10 @@ export function handleSummary(data) {
             failure_rate: +(failureRate * 100).toFixed(2) + '%',
             weighted_errors_E: E,
             error_rate_epsilon: +epsilon.toFixed(6),
-            p99_score: +p99Score.toFixed(2),
+            p99_score: {
+                value: +p99Score.toFixed(2),
+                cut_triggered: p99CutTriggered,
+            },
             detection_score: {
                 value: +detScore.toFixed(2),
                 rate_component: cutTriggered ? null : +rateComponent.toFixed(2),

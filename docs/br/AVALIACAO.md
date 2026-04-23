@@ -183,7 +183,7 @@ Algumas observações que podem ser úteis.
 
 **O log favorece p99 baixo, até 1ms.** Reduzir a latência de 10ms para 1ms rende +1000 pontos no `p99_score`. Abaixo de 1ms, a pontuação satura em 3000 — otimizar além desse ponto não rende pontos adicionais.
 
-**O corte em 15% de falhas é rígido.** Se mais de 15% das requisições falham (somando FP, FN e erros HTTP), o `detection_score` é fixado em −3000 e anula qualquer ganho obtido no p99. Ficar longe da zona de corte é mais importante do que ganhar as últimas casas decimais de acurácia.
+**O corte em 15% de falhas é rígido.** Se mais de 15% das requisições falham (somando FP, FN e erros HTTP), o `detection_score` é fixado em −3000 e anula qualquer ganho obtido no p99. Ficar longe da zona de corte é mais importante do que minimizar os últimos erros de detecção.
 
 **O corte em p99 > 2000ms dificilmente dispara isolado.** O limite de 2s existe como piso rígido para o score de latência, mas na prática é difícil chegar a um p99 desse tamanho sem antes acumular erros de conexão — e esses erros já empurram a `failure_rate` acima de 15%, disparando primeiro o corte de detecção. Considere o corte de p99 como um backstop, não como algo comum de ver isoladamente.
 

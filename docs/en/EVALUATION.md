@@ -183,7 +183,7 @@ Some observations that may be useful.
 
 **The log favors low p99, down to 1ms.** Reducing latency from 10ms to 1ms is worth +1000 points in `p99_score`. Below 1ms, the score saturates at 3000 — optimizing beyond that point doesn't earn additional points.
 
-**The 15% failure cutoff is strict.** If more than 15% of requests fail (summing FP, FN, and HTTP errors), `detection_score` is fixed at −3000 and cancels any p99 gain. Staying away from the cutoff zone matters more than tuning the last decimals of accuracy.
+**The 15% failure cutoff is strict.** If more than 15% of requests fail (summing FP, FN, and HTTP errors), `detection_score` is fixed at −3000 and cancels any p99 gain. Staying away from the cutoff zone matters more than shaving off the last few detection errors.
 
 **The p99 > 2000ms cutoff rarely fires on its own.** The 2s limit exists as a hard floor for the latency score, but in practice it's hard to reach a p99 that high without first accumulating connection errors — and those errors push `failure_rate` above 15%, triggering the detection cutoff first. Treat the p99 cutoff as a backstop, not something you'll commonly see in isolation.
 

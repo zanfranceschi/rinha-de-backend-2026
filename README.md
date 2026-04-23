@@ -1,20 +1,16 @@
-# Rinha de Backend 2026 – Fraud detection
+# Rinha de Backend 2026 – Fraud Detection
 
 ![cover](/misc/cover.png)
 
-🇧🇷 [Português](#-português) · 🇺🇸 [English](#-english)
+[Português](#português) · [English](#english)
 
-## SOFT LAUNCH
-
-| 🇧🇷 Português | 🇺🇸 English |
-|---|---|
-| Esta edição ainda não está 100% completa – ainda é um soft launch. Entretanto, se você encontrou esse repositório e já quiser ir desenvolvendo seu backend, fique à vontade! As regras não devem mudar muito em relação a edição final. | This edition is not 100% complete yet – it's still a soft launch. However, if you found this repository and already want to start developing your backend, feel free! The rules shouldn't change much compared to the final edition. |
+**status:** beta – *regras podem mudar / rules may change*
 
 ---
 
-## 🇧🇷 Português
+## Português
 
-A **Rinha de Backend** é uma competição amistosa em que desenvolvedores constroem backends sob restrições agressivas de CPU e memória. Cada edição traz um tema diferente — e o desta vez é **detecção de fraude em transações de cartão usando busca vetorial**.
+A **Rinha de Backend** é uma competição amistosa em que você constrói um backend sob restrições de CPU e memória. Cada edição traz um tema diferente — e o desta vez é **detecção de fraude em transações de cartão usando busca vetorial**.
 
 **Documentação completa do desafio:** [**docs/br/README.md**](./docs/br/README.md)
 
@@ -26,9 +22,9 @@ A **Rinha de Backend** é uma competição amistosa em que desenvolvedores const
 
 ---
 
-## 🇺🇸 English
+## English
 
-**Rinha de Backend** ("Backend Brawl") is a friendly competition in which developers build backends under tight CPU and memory constraints. Each edition has a different theme — this one is **credit card fraud detection using vector search**.
+**Rinha de Backend** is a friendly competition where you build a backend under CPU and memory constraints. Each edition has a different theme — this one is **credit card fraud detection using vector search**.
 
 **Full challenge documentation:** [**docs/en/README.md**](./docs/en/README.md)
 

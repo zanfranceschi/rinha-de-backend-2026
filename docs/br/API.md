@@ -1,16 +1,16 @@
 # API
 
-Sua API precisa expor exatamente dois endpoints na porta **9999** (veja [ARQUITETURA.md](./ARQUITETURA.md)).
+A sua API deve expor exatamente dois endpoints na porta **9999** (veja [ARQUITETURA.md](./ARQUITETURA.md)).
 
 
 ## `GET /ready`
 
-Health check. Deve retornar `HTTP 2xx` quando a API estiver pronta para receber requisições e ser testada. Muito simples.
+Verificação de prontidão. A sua API deve responder com `HTTP 2xx` quando estiver pronta para receber requisições e ser testada.
 
 
 ## `POST /fraud-score`
 
-Esse é o endpoint para detecção de fraudes; é onde você tem que caprichar. O formato do payload é como o seguinte exemplo:
+Este é o endpoint responsável pela detecção de fraudes. O formato do payload é como o seguinte exemplo:
 
 ```json
 {
@@ -50,22 +50,22 @@ Esse é o endpoint para detecção de fraudes; é onde você tem que caprichar. 
 | `transaction.amount`            | number     | Valor da transação |
 | `transaction.installments`      | integer    | Número de parcelas |
 | `transaction.requested_at`      | string ISO | Timestamp UTC da requisição |
-| `customer.avg_amount`           | number     | Média histórica de gasto do portador |
-| `customer.tx_count_24h`         | integer    | Transações do portador nas últimas 24h |
+| `customer.avg_amount`           | number     | Média histórica de gasto do portador do cartão |
+| `customer.tx_count_24h`         | integer    | Quantidade de transações do portador nas últimas 24h |
 | `customer.known_merchants`      | string[]   | Comerciantes já utilizados pelo portador |
 | `merchant.id`                   | string     | Identificador do comerciante |
-| `merchant.mcc`                  | string     | MCC (Merchant Category Code) |
+| `merchant.mcc`                  | string     | MCC (Merchant Category Code), código da categoria do comerciante |
 | `merchant.avg_amount`           | number     | Ticket médio do comerciante |
-| `terminal.is_online`            | boolean    | Transação online (`true`) ou presencial (`false`) |
-| `terminal.card_present`         | boolean    | Cartão presente no terminal |
-| `terminal.km_from_home`         | number     | Distância (km) do endereço do portador |
-| `last_transaction`              | object \| `null` | Dados da transação anterior (pode ser `null`) |
+| `terminal.is_online`            | boolean    | Indica se a transação é online (`true`) ou presencial (`false`) |
+| `terminal.card_present`         | boolean    | Indica se o cartão está presente no terminal |
+| `terminal.km_from_home`         | number     | Distância, em km, do endereço do portador |
+| `last_transaction`              | object \| `null` | Dados da transação anterior (pode ser `null` quando não houver transação anterior) |
 | `last_transaction.timestamp`    | string ISO | Timestamp UTC da transação anterior |
-| `last_transaction.km_from_current` | number  | Distância (km) entre a transação anterior e a atual |
+| `last_transaction.km_from_current` | number  | Distância, em km, entre a transação anterior e a atual |
 
 ### Resposta
 
-A resposta deve ser como este exemplo:
+A sua API deve responder no formato deste exemplo:
 
 ```json
 {
@@ -74,15 +74,14 @@ A resposta deve ser como este exemplo:
 }
 ```
 
-*Você pode encontrar [vários exemplos de payloads aqui](/resources/example-payloads.json). Note que o arquivo contém um array de payloads, mas os payloads no teste são individuais.*
+Você pode consultar [vários exemplos de payloads aqui](/resources/example-payloads.json). O arquivo contém um array de payloads apenas para facilitar a leitura; no teste, cada requisição envia um payload individual.
 
 ---
 
 ## Como decidir `approved` e `fraud_score`
 
-A lógica de detecção (vetorização + busca vetorial) está descrita em:
+A lógica de detecção (vetorização e busca vetorial) está descrita em:
 
-- **[REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md)** — especificação exata das 14 dimensões, normalização e exemplos completos do fluxo.
+- **[REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md)** — especificação das 14 dimensões, da normalização e exemplos completos do fluxo.
 
-- **[BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md)** — explicação didática do conceito.
-
+- **[BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md)** — explicação didática do conceito de busca vetorial.

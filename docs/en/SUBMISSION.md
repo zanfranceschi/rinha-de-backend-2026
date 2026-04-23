@@ -1,10 +1,10 @@
 # Submission
 
-How to participate in Rinha de Backend 2026.
+This page describes how you can take part in Rinha de Backend 2026.
 
 ## Registration
 
-To participate and have your backend officially tested, you need to open a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) adding a file containing your participation info. For example:
+To register your backend for official testing, you need to open a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) that adds a file with your participation details. An example:
 
 ```json
 [{
@@ -13,7 +13,8 @@ To participate and have your backend officially tested, you need to open a [pull
 }]
 ```
 
-Note that this file contains an array so you can submit more than one backend. For example:
+The file holds an array, so you can submit more than one backend if you want. For example:
+
 ```json
 [{
     "id": "ana-elixir",
@@ -29,15 +30,17 @@ Note that this file contains an array so you can submit more than one backend. F
 }]
 ```
 
-The filename must be exactly your github.com username and placed inside the [./participants](./participants) directory. For example: `./participants/ana.json`. Obviously, your git repository must be public!
+The filename must be exactly your github.com username, placed inside the [./participants](./participants) directory — for example, `./participants/ana.json`. Your git repository also needs to be public.
 
 ## Repository structure
 
-Your repository **MUST** contain at least two branches:
-- The main branch – usually called `main` – containing your backend source code.
-- A branch called `submission`. The submission branch must contain only the files required to execute the test (it must not contain the source code)!
+Your repository must have at least two branches:
 
-Example directory structure per branch:
+- The main branch — usually called `main` — which holds your backend source code.
+- A branch called `submission`. This branch must contain only the files needed to run the test, and it cannot contain the source code.
+
+Here is an example of the directory structure on each branch:
+
 ```
 # main branch
 ├── src/
@@ -56,9 +59,9 @@ Example directory structure per branch:
 └── init.sql
 ```
 
-Note that having the `docker-compose.yml` file at the root of the `submission` branch is essential. Otherwise, it won't be possible to run the test for your backend.
+The `docker-compose.yml` file must sit at the root of the `submission` branch. Without it, your backend cannot be tested.
 
-Please also add an `info.json` file with the following fields so we can analyze the most used technologies in this edition of Rinha and reach you if needed to announce a win, make a referral, etc.
+Your repository also needs an `info.json` file with the fields below. This helps us understand which technologies are most used in this edition of Rinha, and lets us reach you if we need to — to announce a win, make a referral, and so on.
 
 ```json
 {
@@ -66,30 +69,27 @@ Please also add an `info.json` file with the following fields so we can analyze 
     "social": ["https://github.com/ja/", "https://www.linkedin.com/in/anazan"],
     "source-code-repo": "https://github.com/100f/rinha-backend-2025",
     "stack": ["java", "postgres", "nginx", "redis"],
-    "open_to_work": true    
+    "open_to_work": true
 }
 ```
-About the **open_to_work** field: Rinha has already helped many people professionally! So, to let people know you're looking for new opportunities, set this field to `true`.
 
+A note on the **open_to_work** field: if you are looking for new opportunities and want people to know about it, set this field to `true`.
 
-## Test Execution
+## Preview and final test
 
-For your backend to actually go through the test, you must open an [issue](https://github.com/zanfranceschi/rinha-de-backend-2026/issues) with `rinha/test` in the description. If you have more than one submission, also provide the `id` – for example, `rinha/test ana-experimental`.
+There are two testing moments in Rinha:
 
-This Rinha de Backend edition has an engine that scans open issues with this description, runs the tests, posts the test result (or error) as a comment, and closes the issue. To resubmit your backend for a new test, just open a new issue.
+- **Preview tests** — you can submit your backend to as many preview tests as you want – they serve as a practice run for the final test. Just open an issue [like this one](https://github.com/zanfranceschi/rinha-de-backend-2026/issues/49) with `rinha/test [optional id of your submission]` in the issue description. The Rinha Engine scans all open issues with that description, runs a preview test, posts the results (or any error) together with your score as a comment, and closes the issue. Take full advantage of preview tests to make small adjustments, try different configurations, and so on.
 
-![alt text](../br/open-issue.png)
+- **Final test** — runs a single time, at the end of Rinha, and it is what defines the official score of each participant. It uses a different script from the preview script — likely heavier, capable of demanding more from your backend (more volume, more load, different scenarios). The date of the final test is not defined yet.
 
+### Test environment
 
-#### Test environment specifications
+This year, Rinha runs on a [Mac Mini Late 2014](https://support.apple.com/en-us/111931) with Ubuntu 24.04.
 
-This year Rinha is using a [Mac Mini Late 2014 Edition](https://support.apple.com/en-us/111931) running Ubuntu 24.04.
+Specs:
 
-Mac Mini specs:
-- 2.6GHz
-- 8GB of RAM
-- 1TB of Storage
+- 2.6 GHz
+- 8 GB of RAM
+- 1 TB of storage
 
-## Deadline
-
-The submission deadline has not been defined yet.

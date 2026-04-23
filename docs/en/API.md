@@ -1,16 +1,16 @@
 # API
 
-Your API needs to expose exactly two endpoints on port **9999** (see [ARCHITECTURE.md](./ARCHITECTURE.md)).
+Your API must expose exactly two endpoints on port **9999** (see [ARCHITECTURE.md](./ARCHITECTURE.md)).
 
 
 ## `GET /ready`
 
-Health check. Must return `HTTP 2xx` when the API is ready to receive requests and be tested. Very simple.
+Health check. Your API must return `HTTP 2xx` once it is ready to receive requests and be tested.
 
 
 ## `POST /fraud-score`
 
-This is the fraud detection endpoint; this is where you need to put in the work. The payload format is like the following example:
+This is the fraud detection endpoint, the core of your submission. The payload format must match the example below:
 
 ```json
 {
@@ -54,18 +54,18 @@ This is the fraud detection endpoint; this is where you need to put in the work.
 | `customer.tx_count_24h`         | integer    | Cardholder's transactions in the last 24h |
 | `customer.known_merchants`      | string[]   | Merchants already used by the cardholder |
 | `merchant.id`                   | string     | Merchant identifier |
-| `merchant.mcc`                  | string     | MCC (Merchant Category Code) |
+| `merchant.mcc`                  | string     | MCC (Merchant Category Code), a code that identifies the merchant's line of business |
 | `merchant.avg_amount`           | number     | Merchant's average ticket |
 | `terminal.is_online`            | boolean    | Online transaction (`true`) or in-person (`false`) |
-| `terminal.card_present`         | boolean    | Card present at the terminal |
+| `terminal.card_present`         | boolean    | Whether the physical card is present at the terminal |
 | `terminal.km_from_home`         | number     | Distance (km) from the cardholder's address |
-| `last_transaction`              | object \| `null` | Previous transaction data (can be `null`) |
+| `last_transaction`              | object \| `null` | Previous transaction data (may be `null`) |
 | `last_transaction.timestamp`    | string ISO | UTC timestamp of the previous transaction |
 | `last_transaction.km_from_current` | number  | Distance (km) between the previous transaction and the current one |
 
 ### Response
 
-The response must look like this example:
+Your API's response must follow this format:
 
 ```json
 {
@@ -74,15 +74,14 @@ The response must look like this example:
 }
 ```
 
-*You can find [several payload examples here](/resources/example-payloads.json). Note that the file contains an array of payloads, but payloads in the test are individual.*
+*Additional payload examples are available in [/resources/example-payloads.json](/resources/example-payloads.json). The file contains an array of payloads, but each payload is sent individually during the test.*
 
 ---
 
 ## How to decide `approved` and `fraud_score`
 
-The detection logic (vectorization + vector search) is described in:
+The detection logic (vectorization and vector search) is described in the following documents:
 
-- **[DETECTION_RULES.md](./DETECTION_RULES.md)** — exact specification of the 14 dimensions, normalization, and complete flow examples.
+- **[DETECTION_RULES.md](./DETECTION_RULES.md)** — full specification of the 14 dimensions, normalization, and end-to-end flow examples.
 
-- **[VECTOR_SEARCH.md](./VECTOR_SEARCH.md)** — didactic explanation of the concept.
-
+- **[VECTOR_SEARCH.md](./VECTOR_SEARCH.md)** — an approachable explanation of the concept.

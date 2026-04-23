@@ -97,3 +97,5 @@ Especificações:
 - 8 GB de RAM
 - 1 TB de storage
 
+A casa Rinha dessa edição!
+![mac mini da rinha](/misc/macmini-rinha.png)

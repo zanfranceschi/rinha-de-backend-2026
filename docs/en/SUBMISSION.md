@@ -93,3 +93,6 @@ Specs:
 - 8 GB of RAM
 - 1 TB of storage
 
+Home of this edition's Rinha!
+![rinha's mac mini](/misc/macmini-rinha.png)
+

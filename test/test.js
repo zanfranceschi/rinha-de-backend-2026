@@ -19,7 +19,7 @@ const fnCount = new Counter('fn_count');
 const errorCount = new Counter('error_count');
 
 export const options = {
-    summaryTrendStats: ['min', 'med', 'max', 'p(90)', 'p(99)'],
+    summaryTrendStats: ['p(99)'],
     scenarios: {
         default: {
             executor: 'ramping-arrival-rate',
@@ -98,8 +98,6 @@ export function handleSummary(data) {
     const errs = data.metrics.error_count ? data.metrics.error_count.values.count : 0;
 
     const N = tp + tn + fp + fn + errs;
-    const classified = tp + tn + fp + fn;
-    const accuracy = classified > 0 ? (tp + tn) / classified : 0;
 
     // Erros ponderados (para a fórmula log) e contagem pura (para o corte)
     const E = (fp * 1) + (fn * 3) + (errs * 5);
@@ -138,13 +136,7 @@ export function handleSummary(data) {
 
     const result = {
         expected: expectedStats,
-        response_times: {
-            min: httpDuration.min.toFixed(2) + 'ms',
-            max: httpDuration.max.toFixed(2) + 'ms',
-            med: httpDuration['med'].toFixed(2) + 'ms',
-            p90: httpDuration['p(90)'].toFixed(2) + 'ms',
-            p99: p99.toFixed(2) + 'ms',
-        },
+        p99: p99.toFixed(2) + 'ms',
         scoring: {
             breakdown: {
                 false_positive_detections: fp,
@@ -153,7 +145,6 @@ export function handleSummary(data) {
                 true_negative_detections: tn,
                 http_errors: errs,
             },
-            detection_accuracy: +(accuracy * 100).toFixed(2) + '%',
             failure_rate: +(failureRate * 100).toFixed(2) + '%',
             weighted_errors_E: E,
             error_rate_epsilon: +epsilon.toFixed(6),

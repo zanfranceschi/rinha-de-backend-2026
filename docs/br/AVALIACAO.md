@@ -135,7 +135,7 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se se
 ```json
 {
   "expected": { "total": 5000, "fraud_count": 1750, "fraud_rate": 35, ... },
-  "response_times": { "min": "0.42ms", "med": "1.15ms", "p90": "2.04ms", "p99": "5.81ms", "max": "..." },
+  "p99": "5.81ms",
   "scoring": {
     "breakdown": {
       "true_positive_detections":  1735,
@@ -144,7 +144,6 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se se
       "false_negative_detections":   15,
       "http_errors":                  0
     },
-    "detection_accuracy": "98.90%",
     "failure_rate": "1.10%",
     "weighted_errors_E": 85,
     "error_rate_epsilon": 0.017,
@@ -163,8 +162,9 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se se
 }
 ```
 
+- `expected` — metadados do dataset (informativo).
+- `p99` — latência observada no percentil 99, em milissegundos. Alimenta o cálculo de `p99_score`.
 - `breakdown` — contagens brutas de TP, TN, FP, FN e HTTP errors.
-- `detection_accuracy` — `(TP + TN) / (TP + TN + FP + FN)`. Informativo, não entra no score.
 - `failure_rate` — `(FP + FN + Err) / N`. Se passar de 15%, o corte de detecção dispara.
 - `weighted_errors_E` — `1·FP + 3·FN + 5·Err`. Entra no cálculo de `ε` e na penalidade absoluta.
 - `error_rate_epsilon` — `E / N`. A taxa ponderada que alimenta o termo log.

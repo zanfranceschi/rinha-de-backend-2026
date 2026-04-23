@@ -135,7 +135,7 @@ If you run the test locally, a `results.json` file will be generated. If your te
 ```json
 {
   "expected": { "total": 5000, "fraud_count": 1750, "fraud_rate": 35, ... },
-  "response_times": { "min": "0.42ms", "med": "1.15ms", "p90": "2.04ms", "p99": "5.81ms", "max": "..." },
+  "p99": "5.81ms",
   "scoring": {
     "breakdown": {
       "true_positive_detections":  1735,
@@ -144,7 +144,6 @@ If you run the test locally, a `results.json` file will be generated. If your te
       "false_negative_detections":   15,
       "http_errors":                  0
     },
-    "detection_accuracy": "98.90%",
     "failure_rate": "1.10%",
     "weighted_errors_E": 85,
     "error_rate_epsilon": 0.017,
@@ -163,8 +162,9 @@ If you run the test locally, a `results.json` file will be generated. If your te
 }
 ```
 
+- `expected` — dataset metadata (informational).
+- `p99` — observed 99th-percentile latency, in milliseconds. Feeds the `p99_score` computation.
 - `breakdown` — raw counts of TP, TN, FP, FN and HTTP errors.
-- `detection_accuracy` — `(TP + TN) / (TP + TN + FP + FN)`. Informational only.
 - `failure_rate` — `(FP + FN + Err) / N`. Crosses 15% → detection cutoff triggers.
 - `weighted_errors_E` — `1·FP + 3·FN + 5·Err`. Feeds `ε` and the absolute penalty.
 - `error_rate_epsilon` — `E / N`. Weighted rate used in the log term.

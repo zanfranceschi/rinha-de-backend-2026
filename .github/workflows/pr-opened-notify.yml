@@ -1,7 +1,11 @@
 name: Notify on PR Opened
 
+# Usamos pull_request_target (e não pull_request) para que PRs vindos de forks
+# também disparem com acesso aos secrets. Isso SÓ é seguro porque este workflow
+# não faz checkout nem executa código do PR. NÃO adicione `actions/checkout` do
+# ref do PR aqui — isso exporia secrets/token a código não confiável do fork.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened]
   workflow_dispatch:
     inputs:

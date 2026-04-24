@@ -55,8 +55,45 @@ jobs:
           content=$(gh api "repos/$REPO/contents/$expected?ref=$PR_HEAD_SHA" --jq '.content' | base64 -d)
 
           if ! printf '%s' "$content" | jq empty 2>/dev/null; then
-            skip "File is not valid JSON. Skipping auto-merge."
+            skip "File is not valid JSON."
           fi
+
+          if ! printf '%s' "$content" | jq -e '
+            type == "array"
+            and length > 0
+            and all(.[];
+              type == "object"
+              and (keys | sort) == ["id", "repo"]
+              and (.id | type == "string")
+              and (.id | length > 0)
+              and (.repo | type == "string")
+              and (.repo | test("^(https?://|git@)"))
+            )
+          ' >/dev/null 2>&1; then
+            skip "JSON does not match expected schema: [{id: string, repo: git-url}, ...]."
+          fi
+
+          total=$(printf '%s' "$content" | jq 'length')
+          unique=$(printf '%s' "$content" | jq '[.[].id] | unique | length')
+          if [ "$total" != "$unique" ]; then
+            skip "Duplicate 'id' values in JSON."
+          fi
+
+          while IFS= read -r repo_url; do
+            if ! heads=$(timeout 15 git ls-remote --heads "$repo_url" 2>/dev/null); then
+              skip "Repo '$repo_url' is unreachable, timed out, or not a valid git repository."
+            fi
+            if [ -z "$heads" ]; then
+              skip "Repo '$repo_url' has no branches."
+            fi
+            branch_count=$(printf '%s\n' "$heads" | wc -l | tr -d ' ')
+            if [ "$branch_count" -lt 2 ]; then
+              skip "Repo '$repo_url' has only $branch_count branch; needs at least 2."
+            fi
+            if ! printf '%s\n' "$heads" | grep -q 'refs/heads/submission$'; then
+              skip "Repo '$repo_url' does not contain a 'submission' branch."
+            fi
+          done < <(printf '%s' "$content" | jq -r '.[].repo')
 
           echo "All checks passed. Merging PR #$PR_NUMBER."
           gh pr merge "$PR_NUMBER" --repo "$REPO" --squash

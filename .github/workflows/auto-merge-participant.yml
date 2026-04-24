@@ -31,14 +31,30 @@ jobs:
             --description "PR que não passou nas validações de auto-merge" \
             --force >/dev/null 2>&1 || true
 
+          touches_participants=0
+          COMMENT_MARKER="<!-- auto-merge-bot -->"
+
           skip() {
             echo "$1"
             gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "para review humano" || true
+            if [ "$touches_participants" = "1" ]; then
+              gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+                --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" \
+                | while read -r cid; do
+                    gh api -X DELETE "repos/$REPO/issues/comments/$cid" >/dev/null 2>&1 || true
+                  done
+              printf -v body '%s\n:warning: **Auto-merge pulou este PR:** %s\n\nEste PR foi marcado com a label `para review humano`. Após corrigir, um novo push vai re-executar a validação automaticamente.' "$COMMENT_MARKER" "$1"
+              gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$body" || true
+            fi
             exit 0
           }
 
           files=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename')
           file_count=$(printf '%s\n' "$files" | grep -c . || true)
+
+          if printf '%s\n' "$files" | grep -qE '^participants/.+\.json$'; then
+            touches_participants=1
+          fi
 
           echo "Changed files ($file_count):"
           printf '%s\n' "$files"

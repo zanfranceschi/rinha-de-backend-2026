@@ -1,0 +1,31 @@
+name: Notify on PR Opened
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send request with secret token
+        env:
+          NOTIFYME_ACCESSCODE: ${{ secrets.NOTIFYME_ACCESSCODE }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          payload=$(jq -n \
+            --arg title "$PR_TITLE" \
+            --arg author "$PR_AUTHOR" \
+            --arg number "$PR_NUMBER" \
+            --arg code "$NOTIFYME_ACCESSCODE" \
+            '{
+              notification: "Novo PR para Rinha: \($title) de \($author), PR número \($number)!!!",
+              accessCode: $code
+            }')
+          curl -sS --fail-with-body -X POST \
+            -H "Content-Type: application/json" \
+            -d "$payload" \
+            https://api.notifymyecho.com/v1/NotifyMe

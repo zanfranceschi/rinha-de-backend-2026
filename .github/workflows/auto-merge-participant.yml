@@ -5,17 +5,31 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+# Permissões são concedidas por job. O job `smoke-test` executa o
+# docker-compose do participante e por isso roda SEM permissões elevadas —
+# assim o token/secrets não ficam ao alcance de código não confiável.
+permissions: {}
+
+# Cancela runs anteriores do mesmo PR ao abrir uma nova — evita pilha de
+# runners executando compose do participante em paralelo a cada push.
+concurrency:
+  group: auto-merge-participant-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
-  auto-merge:
+  validate:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      issues: write
+    outputs:
+      should_merge: ${{ steps.validate.outputs.should_merge }}
+      repos: ${{ steps.validate.outputs.repos }}
     steps:
-      - name: Validate and auto-merge
+      - name: Validate PR structure
+        id: validate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -46,6 +60,8 @@ jobs:
               printf -v body '%s\n:warning: **Auto-merge pulou este PR:** %s\n\nEste PR foi marcado com a label `para review humano`. Após corrigir, um novo push vai re-executar a validação automaticamente.' "$COMMENT_MARKER" "$1"
               gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$body" || true
             fi
+            echo "should_merge=false" >> "$GITHUB_OUTPUT"
+            echo "repos=[]" >> "$GITHUB_OUTPUT"
             exit 0
           }
 
@@ -95,6 +111,12 @@ jobs:
             skip "Duplicate 'id' values in JSON."
           fi
 
+          # Cap no número de repos — cada um vira uma entrada no matrix do
+          # smoke-test (runner por entrada). Evita abuso via JSON enorme.
+          if [ "$total" -gt 5 ]; then
+            skip "Too many repos in JSON ($total); maximum is 5."
+          fi
+
           while IFS= read -r repo_url; do
             if ! heads=$(timeout 15 git ls-remote --heads "$repo_url" 2>/dev/null); then
               skip "Repo '$repo_url' is unreachable, timed out, or not a valid git repository."
@@ -111,5 +133,128 @@ jobs:
             fi
           done < <(printf '%s' "$content" | jq -r '.[].repo')
 
-          echo "All checks passed. Merging PR #$PR_NUMBER."
+          repos_json=$(printf '%s' "$content" | jq -c '[.[].repo]')
+          echo "All checks passed. Repos to smoke-test: $repos_json"
+          echo "should_merge=true" >> "$GITHUB_OUTPUT"
+          echo "repos=$repos_json" >> "$GITHUB_OUTPUT"
+
+  smoke-test:
+    needs: validate
+    if: needs.validate.outputs.should_merge == 'true'
+    runs-on: ubuntu-latest
+    # Cap total de minutos de runner por entrada do matrix — contém compose
+    # malicioso com sleep infinito, build travado ou loop no init.
+    timeout-minutes: 10
+    permissions: {}
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: ${{ fromJson(needs.validate.outputs.repos) }}
+    steps:
+      - name: Checkout rinha repo (for test/smoke.js)
+        uses: actions/checkout@v4
+        with:
+          # Não persistir o GITHUB_TOKEN em .git/config — o docker compose do
+          # participante pode bind-mountar o host filesystem e ler o workspace.
+          persist-credentials: false
+
+      - name: Clone participant submission branch
+        env:
+          REPO_URL: ${{ matrix.repo }}
+        run: |
+          set -euo pipefail
+          timeout 120 git clone --branch submission --depth 1 "$REPO_URL" participant-repo
+          ls -la participant-repo
+          test -f participant-repo/docker-compose.yml || {
+            echo "docker-compose.yml not found at submission branch root"
+            exit 1
+          }
+
+      - name: Start participant stack
+        working-directory: participant-repo
+        # Cap em build+pull+up. Se estourar, o teardown final ainda roda.
+        run: timeout 300 docker compose up -d
+
+      - name: Wait for /ready
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://localhost:9999/ready; then
+              echo "/ready is up (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i: /ready not ready yet"
+            sleep 3
+          done
+          echo "Backend never became ready on http://localhost:9999/ready"
+          docker compose -f participant-repo/docker-compose.yml logs || true
+          exit 1
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run smoke test
+        run: k6 run test/smoke.js
+
+      - name: Dump participant logs on failure
+        if: failure()
+        run: docker compose -f participant-repo/docker-compose.yml logs || true
+
+      - name: Teardown participant stack
+        if: always()
+        run: docker compose -f participant-repo/docker-compose.yml down -v || true
+
+  smoke-test-report:
+    needs: [validate, smoke-test]
+    if: always() && needs.validate.outputs.should_merge == 'true' && needs.smoke-test.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Label and comment smoke failure
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          SMOKE_MARKER="<!-- smoke-test-bot -->"
+
+          gh label create "smoke-test-falhou" \
+            --repo "$REPO" \
+            --color "D93F0B" \
+            --description "Smoke test falhou contra a branch submission" \
+            --force >/dev/null 2>&1 || true
+
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "smoke-test-falhou" || true
+
+          gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            --jq ".[] | select(.body | contains(\"$SMOKE_MARKER\")) | .id" \
+            | while read -r cid; do
+                gh api -X DELETE "repos/$REPO/issues/comments/$cid" >/dev/null 2>&1 || true
+              done
+
+          printf -v body '%s\n:x: **Smoke test falhou.** O backend não respondeu corretamente em `/ready` + `/fraud-score` a partir da branch `submission`.\n\nVeja o log completo: %s\n\nCorrija e faça um novo push — a validação roda de novo automaticamente.' "$SMOKE_MARKER" "$RUN_URL"
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$body" || true
+
+  merge:
+    needs: [validate, smoke-test]
+    if: needs.validate.outputs.should_merge == 'true' && needs.smoke-test.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Squash merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          echo "Smoke test passed. Merging PR #$PR_NUMBER."
           gh pr merge "$PR_NUMBER" --repo "$REPO" --squash

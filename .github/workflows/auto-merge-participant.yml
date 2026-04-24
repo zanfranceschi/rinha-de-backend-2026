@@ -39,10 +39,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          gh label create "para review humano" \
+          gh label create "needs human review" \
             --repo "$REPO" \
             --color "FBCA04" \
-            --description "PR que não passou nas validações de auto-merge" \
             --force >/dev/null 2>&1 || true
 
           touches_participants=0
@@ -50,14 +49,14 @@ jobs:
 
           skip() {
             echo "$1"
-            gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "para review humano" || true
+            gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "needs human review" || true
             if [ "$touches_participants" = "1" ]; then
               gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
                 --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" \
                 | while read -r cid; do
                     gh api -X DELETE "repos/$REPO/issues/comments/$cid" >/dev/null 2>&1 || true
                   done
-              printf -v body '%s\n:warning: **Auto-merge pulou este PR:** %s\n\nEste PR foi marcado com a label `para review humano`. Após corrigir, um novo push vai re-executar a validação automaticamente.' "$COMMENT_MARKER" "$1"
+              printf -v body '%s\n:warning: **Auto-merge pulou este PR:** %s\n\nEste PR foi marcado com a label `needs human review`. Após corrigir, um novo push vai re-executar a validação automaticamente.' "$COMMENT_MARKER" "$1"
               gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$body" || true
             fi
             echo "should_merge=false" >> "$GITHUB_OUTPUT"
@@ -235,13 +234,12 @@ jobs:
           set -euo pipefail
           SMOKE_MARKER="<!-- smoke-test-bot -->"
 
-          gh label create "smoke-test-falhou" \
+          gh label create "smoke test failed" \
             --repo "$REPO" \
             --color "D93F0B" \
-            --description "Smoke test falhou contra a branch submission" \
             --force >/dev/null 2>&1 || true
 
-          gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "smoke-test-falhou" || true
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "smoke test failed" || true
 
           gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
             --jq ".[] | select(.body | contains(\"$SMOKE_MARKER\")) | .id" \
@@ -249,7 +247,7 @@ jobs:
                 gh api -X DELETE "repos/$REPO/issues/comments/$cid" >/dev/null 2>&1 || true
               done
 
-          printf -v body '%s\n:x: **Smoke test falhou.** O backend não respondeu corretamente em `/ready` + `/fraud-score` a partir da branch `submission`.\n\nVeja o log completo: %s\n\nCorrija e faça um novo push — a validação roda de novo automaticamente.' "$SMOKE_MARKER" "$RUN_URL"
+          printf -v body '%s\n:x: **Smoke test failed.** The backend did not respond correctly on `/ready` + `/fraud-score` from the `submission` branch.\n\nSee the full log: %s\n\nFix the issue and push again — the validation will run automatically.' "$SMOKE_MARKER" "$RUN_URL"
           gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$body" || true
 
   merge:

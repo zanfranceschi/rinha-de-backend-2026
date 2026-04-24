@@ -165,10 +165,20 @@ jobs:
           set -euo pipefail
           timeout 120 git clone --branch submission --depth 1 "$REPO_URL" participant-repo
           ls -la participant-repo
-          test -f participant-repo/docker-compose.yml || {
-            echo "docker-compose.yml not found at submission branch root"
+          # Docker Compose procura, nessa ordem: compose.yaml, compose.yml,
+          # docker-compose.yaml, docker-compose.yml. Basta UM deles existir.
+          found=0
+          for f in compose.yaml compose.yml docker-compose.yaml docker-compose.yml; do
+            if [ -f "participant-repo/$f" ]; then
+              echo "Using compose file: $f"
+              found=1
+              break
+            fi
+          done
+          if [ "$found" = "0" ]; then
+            echo "No compose file found at submission branch root (expected one of: compose.yaml, compose.yml, docker-compose.yaml, docker-compose.yml)"
             exit 1
-          }
+          fi
 
       - name: Start participant stack
         working-directory: participant-repo
@@ -187,7 +197,7 @@ jobs:
             sleep 3
           done
           echo "Backend never became ready on http://localhost:9999/ready"
-          docker compose -f participant-repo/docker-compose.yml logs || true
+          (cd participant-repo && docker compose logs) || true
           exit 1
 
       - name: Setup k6
@@ -198,11 +208,13 @@ jobs:
 
       - name: Dump participant logs on failure
         if: failure()
-        run: docker compose -f participant-repo/docker-compose.yml logs || true
+        working-directory: participant-repo
+        run: docker compose logs || true
 
       - name: Teardown participant stack
         if: always()
-        run: docker compose -f participant-repo/docker-compose.yml down -v || true
+        working-directory: participant-repo
+        run: docker compose down -v || true
 
   smoke-test-report:
     needs: [validate, smoke-test]
@@ -258,3 +270,49 @@ jobs:
           set -euo pipefail
           echo "Smoke test passed. Merging PR #$PR_NUMBER."
           gh pr merge "$PR_NUMBER" --repo "$REPO" --squash
+
+  # Único job que toca NOTIFYME_ACCESSCODE. Rodar APÓS todo o pipeline e
+  # NUNCA no mesmo job em que código do participante é executado. `environment:
+  # default` força opt-in: se o secret estiver guardado no Environment (e não
+  # no repo), nenhum outro job consegue lê-lo por engano.
+  notify:
+    needs: [validate, merge]
+    if: >
+      always()
+      && (needs.merge.result == 'success'
+          || (needs.validate.result == 'success' && needs.validate.outputs.should_merge == 'false'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    environment: default
+    permissions: {}
+    steps:
+      - name: Send notification
+        env:
+          NOTIFYME_ACCESSCODE: ${{ secrets.NOTIFYME_ACCESSCODE }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          MERGE_RESULT: ${{ needs.merge.result }}
+          PARTICIPANTS_API: https://api.github.com/repos/${{ github.repository }}/contents/participants?ref=main
+        run: |
+          set -euo pipefail
+          if [ "$MERGE_RESULT" = "success" ]; then
+            # Conta arquivos *.json em participants/ no main pós-merge.
+            # API pública + repo público → sem auth, logo sem expor GITHUB_TOKEN.
+            # Fallback "?" se a chamada falhar (rate-limit, rede): notificação ainda sai.
+            total=$(curl -sSf "$PARTICIPANTS_API" 2>/dev/null \
+              | jq '[.[] | select(.name | endswith(".json"))] | length' 2>/dev/null \
+              || echo "?")
+            msg="PR auto-mergeado na Rinha de ${PR_AUTHOR}, número #${PR_NUMBER} — total de participantes: ${total}"
+          else
+            msg="PR de ${PR_AUTHOR}, número #${PR_NUMBER} precisa de review humano na Rinha"
+          fi
+          payload=$(jq -n \
+            --arg n "$msg" \
+            --arg c "$NOTIFYME_ACCESSCODE" \
+            '{notification: $n, accessCode: $c}')
+          curl -sS --fail-with-body -X POST \
+            -H "Content-Type: application/json" \
+            -d "$payload" \
+            https://api.notifymyecho.com/v1/NotifyMe

@@ -15,6 +15,7 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
+    environment: default
     steps:
       - name: Send request with secret token
         env:

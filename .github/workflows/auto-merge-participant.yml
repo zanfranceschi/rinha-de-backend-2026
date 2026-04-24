@@ -1,0 +1,62 @@
+name: Auto-merge participant submission
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  auto-merge:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate and auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          gh label create "para review humano" \
+            --repo "$REPO" \
+            --color "FBCA04" \
+            --description "PR que não passou nas validações de auto-merge" \
+            --force >/dev/null 2>&1 || true
+
+          skip() {
+            echo "$1"
+            gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "para review humano" || true
+            exit 0
+          }
+
+          files=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename')
+          file_count=$(printf '%s\n' "$files" | grep -c . || true)
+
+          echo "Changed files ($file_count):"
+          printf '%s\n' "$files"
+
+          if [ "$file_count" -ne 1 ]; then
+            skip "Expected exactly 1 changed file, got $file_count. Skipping auto-merge."
+          fi
+
+          expected="participants/${PR_AUTHOR}.json"
+          if [ "$files" != "$expected" ]; then
+            skip "Expected file '$expected', got '$files'. Skipping auto-merge."
+          fi
+
+          content=$(gh api "repos/$REPO/contents/$expected?ref=$PR_HEAD_SHA" --jq '.content' | base64 -d)
+
+          if ! printf '%s' "$content" | jq empty 2>/dev/null; then
+            skip "File is not valid JSON. Skipping auto-merge."
+          fi
+
+          echo "All checks passed. Merging PR #$PR_NUMBER."
+          gh pr merge "$PR_NUMBER" --repo "$REPO" --squash

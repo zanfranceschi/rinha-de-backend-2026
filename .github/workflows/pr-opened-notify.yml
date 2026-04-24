@@ -3,6 +3,14 @@ name: Notify on PR Opened
 on:
   pull_request:
     types: [opened]
+  workflow_dispatch:
+    inputs:
+      pr_title:
+        default: "Teste manual"
+      pr_author:
+        default: "zanfranceschi"
+      pr_number:
+        default: "0"
 
 jobs:
   notify:

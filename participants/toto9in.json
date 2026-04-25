@@ -2,5 +2,9 @@
   {
     "id": "toto9in-rust-pgvector",
     "repo": "https://github.com/toto9in/crab-antiagiota"
+  },
+  {
+    "id": "toto9in-rust-performance",
+    "repo": "https://github.com/toto9in/crab-antiagiota-performance"
   }
 ]

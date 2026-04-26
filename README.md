@@ -6,6 +6,8 @@
 
 **status:** beta – *regras podem mudar / rules may change*
 
+### Official Ranking Preview @ [rinhadebackend.com.br](https://rinhadebackend.com.br/)
+
 ---
 
 ## Português

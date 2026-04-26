@@ -1,6 +1,7 @@
 {
     "participants_dir": "participants",
     "test_script": "run.sh",
+    "post_test_script": "post-run.sh",
     "submission_health_check_endpoint": "http://localhost:9999/ready",
     "submission_health_check_retries": 30,
     "submission_health_check_interval_ms": 3000,

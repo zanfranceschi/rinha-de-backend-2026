@@ -8,6 +8,115 @@
 #include "cjson/cJSON.h"
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   SHA-256 (compatível com sha256sum)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+typedef struct {
+    uint32_t state[8];
+    uint64_t bitlen;
+    uint8_t  buffer[64];
+    size_t   buflen;
+} Sha256;
+
+#define SHA_ROTR(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
+
+static const uint32_t SHA_K[64] = {
+    0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+};
+
+static void sha256_transform(Sha256 *s, const uint8_t b[64]) {
+    uint32_t m[64], a,b_,c,d,e,f,g,h,t1,t2;
+    for (int i = 0, j = 0; i < 16; i++, j += 4)
+        m[i] = ((uint32_t)b[j] << 24) | ((uint32_t)b[j+1] << 16) | ((uint32_t)b[j+2] << 8) | (uint32_t)b[j+3];
+    for (int i = 16; i < 64; i++) {
+        uint32_t s0 = SHA_ROTR(m[i-15],7) ^ SHA_ROTR(m[i-15],18) ^ (m[i-15] >> 3);
+        uint32_t s1 = SHA_ROTR(m[i-2],17) ^ SHA_ROTR(m[i-2],19)  ^ (m[i-2] >> 10);
+        m[i] = m[i-16] + s0 + m[i-7] + s1;
+    }
+    a = s->state[0]; b_= s->state[1]; c = s->state[2]; d = s->state[3];
+    e = s->state[4]; f = s->state[5]; g = s->state[6]; h = s->state[7];
+    for (int i = 0; i < 64; i++) {
+        uint32_t S1 = SHA_ROTR(e,6) ^ SHA_ROTR(e,11) ^ SHA_ROTR(e,25);
+        uint32_t ch = (e & f) ^ (~e & g);
+        t1 = h + S1 + ch + SHA_K[i] + m[i];
+        uint32_t S0 = SHA_ROTR(a,2) ^ SHA_ROTR(a,13) ^ SHA_ROTR(a,22);
+        uint32_t mj = (a & b_) ^ (a & c) ^ (b_ & c);
+        t2 = S0 + mj;
+        h = g; g = f; f = e; e = d + t1;
+        d = c; c = b_; b_ = a; a = t1 + t2;
+    }
+    s->state[0] += a; s->state[1] += b_; s->state[2] += c; s->state[3] += d;
+    s->state[4] += e; s->state[5] += f;  s->state[6] += g; s->state[7] += h;
+}
+
+static void sha256_init(Sha256 *s) {
+    s->state[0] = 0x6a09e667; s->state[1] = 0xbb67ae85;
+    s->state[2] = 0x3c6ef372; s->state[3] = 0xa54ff53a;
+    s->state[4] = 0x510e527f; s->state[5] = 0x9b05688c;
+    s->state[6] = 0x1f83d9ab; s->state[7] = 0x5be0cd19;
+    s->bitlen = 0; s->buflen = 0;
+}
+
+static void sha256_update(Sha256 *s, const void *data, size_t len) {
+    const uint8_t *p = data;
+    s->bitlen += (uint64_t)len * 8;
+    for (size_t i = 0; i < len; i++) {
+        s->buffer[s->buflen++] = p[i];
+        if (s->buflen == 64) { sha256_transform(s, s->buffer); s->buflen = 0; }
+    }
+}
+
+static void sha256_final(Sha256 *s, uint8_t out[32]) {
+    size_t i = s->buflen;
+    if (i < 56) {
+        s->buffer[i++] = 0x80;
+        while (i < 56) s->buffer[i++] = 0;
+    } else {
+        s->buffer[i++] = 0x80;
+        while (i < 64) s->buffer[i++] = 0;
+        sha256_transform(s, s->buffer);
+        memset(s->buffer, 0, 56);
+    }
+    for (int j = 0; j < 8; j++)
+        s->buffer[56 + j] = (uint8_t)(s->bitlen >> (56 - j*8));
+    sha256_transform(s, s->buffer);
+    for (int j = 0; j < 8; j++) {
+        out[j*4]   = (uint8_t)(s->state[j] >> 24);
+        out[j*4+1] = (uint8_t)(s->state[j] >> 16);
+        out[j*4+2] = (uint8_t)(s->state[j] >> 8);
+        out[j*4+3] = (uint8_t)(s->state[j]);
+    }
+}
+
+static int sha256_file(const char *path, char hex_out[65]) {
+    FILE *f = fopen(path, "rb");
+    if (!f) return -1;
+    Sha256 s;
+    sha256_init(&s);
+    uint8_t buf[8192];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), f)) > 0)
+        sha256_update(&s, buf, n);
+    fclose(f);
+    uint8_t digest[32];
+    sha256_final(&s, digest);
+    static const char hex[] = "0123456789abcdef";
+    for (int i = 0; i < 32; i++) {
+        hex_out[i*2]   = hex[(digest[i] >> 4) & 0xf];
+        hex_out[i*2+1] = hex[digest[i] & 0xf];
+    }
+    hex_out[64] = '\0';
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    PCG32 PRNG
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -535,7 +644,8 @@ static void usage(const char *prog) {
         "Options:\n"
         "  --refs N             number of reference vectors (default: 200)\n"
         "  --payloads N         number of test payloads (default: 1000)\n"
-        "  --fraud-ratio F      fraud ratio, 0.0 to 1.0 (default: 0.30)\n"
+        "  --fraud-ratio-refs F      fraud ratio for references, 0.0 to 1.0 (default: 0.30)\n"
+        "  --fraud-ratio-payloads F  fraud ratio for payloads, 0.0 to 1.0 (default: 0.30)\n"
         "  --norm-cfg PATH      path to normalization.json (default: resources/normalization.json)\n"
         "  --mcc-cfg PATH       path to mcc_risk.json (default: resources/mcc_risk.json)\n"
         "  --refs-out PATH      output path for references.json (default: resources/references.json)\n"
@@ -552,7 +662,8 @@ int main(int argc, char **argv) {
     int ref_size = 200, payload_size = 1000;
     const char *norm_path     = "resources/normalization.json";
     const char *mcc_path      = "resources/mcc_risk.json";
-    double fraud_ratio = 0.30;
+    double fraud_ratio_refs     = 0.30;
+    double fraud_ratio_payloads = 0.30;
     const char *refs_out      = "resources/references.json";
     const char *refs_in       = "resources/references.json";
     int reuse_refs            = 0;
@@ -567,8 +678,10 @@ int main(int argc, char **argv) {
             norm_path = argv[++i];
         else if (strcmp(argv[i], "--mcc-cfg") == 0 && i + 1 < argc)
             mcc_path = argv[++i];
-        else if (strcmp(argv[i], "--fraud-ratio") == 0 && i + 1 < argc)
-            fraud_ratio = atof(argv[++i]);
+        else if (strcmp(argv[i], "--fraud-ratio-refs") == 0 && i + 1 < argc)
+            fraud_ratio_refs = atof(argv[++i]);
+        else if (strcmp(argv[i], "--fraud-ratio-payloads") == 0 && i + 1 < argc)
+            fraud_ratio_payloads = atof(argv[++i]);
         else if (strcmp(argv[i], "--refs-out") == 0 && i + 1 < argc)
             refs_out = argv[++i];
         else if (strcmp(argv[i], "--refs-in") == 0 && i + 1 < argc)
@@ -607,7 +720,7 @@ int main(int argc, char **argv) {
         rng_init(&rng, REF_SEED);
 
         for (int i = 0; i < ref_size; i++) {
-            Profile p   = pick_profile(&rng, fraud_ratio);
+            Profile p   = pick_profile(&rng, fraud_ratio_refs);
             Request req = gen_request(&rng, p, &mcc);
             normalize(&req, &norm, &mcc, refs[i].v);
             for (int j = 0; j < VDIM; j++) refs[i].v[j] = round4(refs[i].v[j]);
@@ -630,13 +743,22 @@ int main(int argc, char **argv) {
         printf("  -> %s (%d vectors)\n", refs_out, ref_size);
     }
 
+    /* --- Checksum das referências --- */
+    const char *refs_path = reuse_refs ? refs_in : refs_out;
+    char refs_checksum[65];
+    if (sha256_file(refs_path, refs_checksum) != 0) {
+        fprintf(stderr, "error: cannot read %s for checksum\n", refs_path);
+        return 1;
+    }
+    printf("References SHA-256: %s\n", refs_checksum);
+
     /* --- Payloads de teste --- */
     printf("Generating %d test payloads...\n", payload_size);
     rng_init(&rng, PAY_SEED);
 
     TestEntry *entries = malloc((size_t)payload_size * sizeof(TestEntry));
     for (int i = 0; i < payload_size; i++) {
-        Profile p = pick_profile(&rng, fraud_ratio);
+        Profile p = pick_profile(&rng, fraud_ratio_payloads);
         entries[i].req = gen_request(&rng, p, &mcc);
         normalize(&entries[i].req, &norm, &mcc, entries[i].vec);
         for (int j = 0; j < VDIM; j++) entries[i].vec[j] = round4(entries[i].vec[j]);
@@ -652,6 +774,8 @@ int main(int argc, char **argv) {
     }
 
     cJSON *root = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(root, "references_checksum_sha256", refs_checksum);
 
     cJSON *stats = cJSON_AddObjectToObject(root, "stats");
     cJSON_AddItemToObject(stats, "total",           jnum(payload_size));

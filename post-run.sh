@@ -29,17 +29,20 @@ fi
 echo "exporting results for $PARTICIPANT/$SUBMISSION_ID @ $COMMIT (issue #$ISSUE)"
 
 # clone limpo (idempotente)
+rm -rf $RESULTS_DIR
 git clone --depth 1 --branch "$RESULTS_BRANCH" "$RESULTS_REPO" "$RESULTS_DIR"
 
 # atualiza o JSON (tmp + mv pra não corromper em caso de falha)
 RESULTS=$(cat test/results.json)
 tmp=$(mktemp)
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S")
 jq --indent 4 \
    --arg p "$PARTICIPANT" \
    --arg s "$SUBMISSION_ID" \
    --arg url "$REPO_URL" \
+   --arg ts "$TIMESTAMP" \
    --argjson data "$RESULTS" \
-   '.[$p][$s] = ($data + {repo_url: $url})' \
+   '.[$p][$s] = ($data + {repo_url: $url, timestamp: $ts})' \
    "$RESULTS_FILE" > "$tmp"
 mv "$tmp" "$RESULTS_FILE"
 

@@ -36,13 +36,16 @@ git clone --depth 1 --branch "$RESULTS_BRANCH" "$RESULTS_REPO" "$RESULTS_DIR"
 RESULTS=$(cat test/results.json)
 tmp=$(mktemp)
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+ISSUE_URL=""
+[[ -n "$ISSUE" ]] && ISSUE_URL="https://github.com/zanfranceschi/rinha-de-backend-2026/issues/$ISSUE"
 jq --indent 4 \
    --arg p "$PARTICIPANT" \
    --arg s "$SUBMISSION_ID" \
    --arg url "$REPO_URL" \
+   --arg issue_url "$ISSUE_URL" \
    --arg ts "$TIMESTAMP" \
    --argjson data "$RESULTS" \
-   '.[$p][$s] = ($data + {repo_url: $url, timestamp: $ts})' \
+   '.[$p][$s] = ($data + {repo_url: $url, issue_url: $issue_url, timestamp: $ts})' \
    "$RESULTS_FILE" > "$tmp"
 mv "$tmp" "$RESULTS_FILE"
 

@@ -302,7 +302,7 @@ jobs:
             total=$(curl -sSf "$PARTICIPANTS_API" 2>/dev/null \
               | jq '[.[] | select(.name | endswith(".json"))] | length' 2>/dev/null \
               || echo "?")
-            msg="PR auto-mergeado na Rinha de ${PR_AUTHOR}, número ${PR_NUMBER} — total de participantes: ${total}"
+            msg="PR auto-mergeado na Rinha de Backend por ${PR_AUTHOR}, número ${PR_NUMBER} — total de participantes: ${total}"
           else
             msg="PR de ${PR_AUTHOR}, número ${PR_NUMBER} precisa de review humano na Rinha"
           fi

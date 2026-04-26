@@ -2,5 +2,9 @@
     {
         "id": "MXLange-golang-1",
         "repo": "https://github.com/MXLange/rinha-de-backend-2026-go"
+    },
+    {
+        "id": "MXLange-rust-1",
+        "repo": "https://github.com/MXLange/rinha-de-backend-2026-rust"
     }
 ]

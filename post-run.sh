@@ -35,7 +35,7 @@ git clone --depth 1 --branch "$RESULTS_BRANCH" "$RESULTS_REPO" "$RESULTS_DIR"
 # atualiza o JSON (tmp + mv pra não corromper em caso de falha)
 RESULTS=$(cat test/results.json)
 tmp=$(mktemp)
-TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S")
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 jq --indent 4 \
    --arg p "$PARTICIPANT" \
    --arg s "$SUBMISSION_ID" \

@@ -58,6 +58,8 @@ For each transaction, your API must:
 
 The 14 dimensions, the normalization formulas and the constants are in [DETECTION_RULES.md](./DETECTION_RULES.md). If you have never worked with vector search, start with [VECTOR_SEARCH.md](./VECTOR_SEARCH.md).
 
+> **Important!** Using the test payloads as a reference or for fraud lookup is not allowed! The final tests will use different payloads, and doing this in the previews distorts the results and discourages other participants.
+
 ## Reference files
 
 You receive three files. They don't change during the test, so you can pre-process them at build time or at container startup.

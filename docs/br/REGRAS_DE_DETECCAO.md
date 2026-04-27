@@ -100,6 +100,8 @@ Depois que o vetor está pronto, a sua API deve:
 
 Para medir "proximidade" entre dois vetores, os exemplos deste documento usam **distância euclidiana** sobre as 14 dimensões. Essa é a métrica de referência, mas você pode usar outras métricas de distância (como cosseno ou Manhattan) se achar que faz mais sentido para a sua implementação.
 
+> **Importante!** Não é permitido usar os payloads do teste como referência ou para fazer lookup de fraudes! Os testes finais vão usar outros payloads, e fazer isso nas prévias distroce o resultado e desanima outros participantes.
+
 
 ## Exemplo de transação fraudulenta
 

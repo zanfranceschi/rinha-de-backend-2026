@@ -58,6 +58,8 @@ Para cada transação, a sua API deve:
 
 As 14 dimensões, as fórmulas de normalização e as constantes estão em [REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md). Se você nunca trabalhou com busca vetorial, comece por [BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md).
 
+> **Importante!** Não é permitido usar os payloads do teste como referência ou para fazer lookup de fraudes! Os testes finais vão usar outros payloads, e fazer isso nas prévias distroce o resultado e desanima outros participantes.
+
 ## Arquivos de referência
 
 Você recebe três arquivos. Eles não mudam durante o teste, então você pode pré-processá-los no build ou no startup do container.

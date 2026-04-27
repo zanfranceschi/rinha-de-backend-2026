@@ -100,6 +100,8 @@ Once the vector is ready, your API should:
 
 To measure "proximity" between two vectors, the examples in this document use **Euclidean distance** over the 14 dimensions. That is the reference metric, but you can use other distance metrics (such as cosine or Manhattan) if you find that it makes more sense for your implementation.
 
+> **Important!** Using the test payloads as a reference or for fraud lookup is not allowed! The final tests will use different payloads, and doing this in the previews distorts the results and discourages other participants.
+
 
 ## Example of a fraudulent transaction
 

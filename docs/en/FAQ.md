@@ -15,6 +15,7 @@
 - Try to hide your submission to prevent others from learning from it.
 - Disrespect other participants or the people organizing the event.
 - Make demands of organizers or participants. Nobody is profiting from this; the goal is to learn and have fun.
+- Use the test payloads as a reference or for fraud lookup!
 
 ## Common mistakes
 

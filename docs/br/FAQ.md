@@ -14,6 +14,7 @@ Se você quer colaborar com a edição (sugerir melhorias, reportar problemas, c
 - Usar um load balancer que aplique qualquer lógica relacionada à detecção de fraude. O load balancer só distribui requisições.
 - "Esconder" a sua submissão para que outras pessoas não possam aprender com ela. A ideia da Rinha é o aprendizado coletivo.
 - Desrespeitar outros participantes ou quem organiza a Rinha. Ninguém está ganhando dinheiro com isso — a proposta é aprender e se divertir.
+- Usar os payloads do teste como referência ou para fazer lookup de fraudes!
 
 ## Erros comuns
 

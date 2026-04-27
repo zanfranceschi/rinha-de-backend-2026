@@ -165,7 +165,7 @@ O exemplo acima usa **distância euclidiana**, mas ela é apenas uma das opçõe
 
 ### KNN exato vs ANN (Approximate Nearest Neighbors)
 
-A forma mais simples de encontrar os K vizinhos mais próximos é o **KNN exato**: percorrer todas as referências, calcular a distância para cada uma e ordenar. Funciona, mas custa O(N) por consulta — com 100 mil referências e um orçamento de latência apertado, pode ser caro demais.
+A forma mais simples de encontrar os K vizinhos mais próximos é o **KNN exato**: percorrer todas as referências, calcular a distância para cada uma e ordenar. Funciona, mas custa O(N) por consulta — com 1 milhão de referências e um orçamento de latência apertado, pode ser caro demais.
 
 **ANN** é uma alternativa: estruturas de dados que abrem mão de um pouco de precisão para responder mais rápido. Algumas famílias:
 

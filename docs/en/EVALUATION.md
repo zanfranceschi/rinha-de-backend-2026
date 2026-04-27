@@ -177,6 +177,6 @@ A few observations that may be useful.
 
 **The weighted error rate does not depend on the test size.** You cannot "dilute" errors by increasing the volume — the same rate results in the same `rate_component`. The `absolute_penalty`, on the other hand, grows on a logarithmic scale with the actual error volume; backends that fail at large scale lose more points than those that fail at small scale.
 
-**When ANN is worth it.** Brute force over 100,000 vectors with 14 dimensions per query can get computationally expensive. Adopting ANN (HNSW, IVF) or a ready-made vector database can help. But always measure before complicating things.
+**When ANN is worth it.** Brute force over 1,000,000 vectors with 14 dimensions per query can get computationally expensive. Adopting ANN (HNSW, IVF) or a ready-made vector database can help. But always measure before complicating things.
 
 **The reference files do not change during the test.** You can pre-process freely at startup or during the container build — the more processing you move outside of the test, the better your `p99` tends to be.

@@ -62,7 +62,7 @@ As 14 dimensões, as fórmulas de normalização e as constantes estão em [REGR
 
 Você recebe três arquivos. Eles não mudam durante o teste, então você pode pré-processá-los no build ou no startup do container.
 
-- `references.json.gz` — 100.000 vetores rotulados como `fraud` ou `legit`.
+- `references.json.gz` — 1.000.000 vetores rotulados como `fraud` ou `legit`.
 - `mcc_risk.json` — risco por categoria de comerciante.
 - `normalization.json` — constantes usadas na normalização.
 

@@ -4,7 +4,7 @@ You receive three files that must be used to decide whether transactions are fra
 
 | File | Size | Purpose |
 |---|---|---|
-| [`resources/references.json.gz`](/resources/references.json.gz) | ~1.6 MB (gzipped) / ~10 MB | 100,000 labeled vectors — the reference base that your vector search queries. |
+| [`resources/references.json.gz`](/resources/references.json.gz) | ~16 MB (gzipped) / ~100 MB | 1,000,000 labeled vectors — the reference base that your vector search queries. |
 | [`resources/mcc_risk.json`](/resources/mcc_risk.json) | <1 KB | Risk score by MCC (merchant category). |
 | [`resources/normalization.json`](/resources/normalization.json) | <1 KB | Constants for normalizing payload fields. |
 

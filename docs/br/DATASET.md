@@ -4,7 +4,7 @@ Você recebe três arquivos necessários para decidir se as transações são ou
 
 | Arquivo | Tamanho | Para quê |
 |---|---|---|
-| [`resources/references.json.gz`](/resources/references.json.gz) | ~1,6 MB (gzipado) / ~10 MB | 100.000 vetores rotulados que sua busca vetorial consulta. |
+| [`resources/references.json.gz`](/resources/references.json.gz) | ~16 MB (gzipado) / ~100 MB | 1.000.000 vetores rotulados que sua busca vetorial consulta. |
 | [`resources/mcc_risk.json`](/resources/mcc_risk.json) | <1 KB | Score de risco por MCC (categoria do comerciante). |
 | [`resources/normalization.json`](/resources/normalization.json) | <1 KB | Constantes para normalizar os campos do payload. |
 

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 time ./data-generator/generate \
-    --refs 1000000 \
+    --refs 3000000 \
     --refs-out resources/references.json \
     --payloads 39100 \
     --payloads-out test/test-data.json \

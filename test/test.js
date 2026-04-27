@@ -30,7 +30,7 @@ export const options = {
             startRate: 1,
             timeUnit: '1s',
             preAllocatedVUs: 10,
-            maxVUs: 50,
+            maxVUs: 30,
             gracefulStop: '10s',
             stages: [
                 { duration: '120s', target: 650 },
@@ -57,7 +57,7 @@ export default function () {
     const res = http.post(
         'http://localhost:9999/fraud-score',
         JSON.stringify(entry.request),
-        { headers: { 'Content-Type': 'application/json' }, timeout: '1500ms' }
+        { headers: { 'Content-Type': 'application/json' }, timeout: '1000ms' }
     );
 
     if (res.status === 200) {

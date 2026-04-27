@@ -57,7 +57,7 @@ export default function () {
     const res = http.post(
         'http://localhost:9999/fraud-score',
         JSON.stringify(entry.request),
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { 'Content-Type': 'application/json' }, timeout: '1500ms' }
     );
 
     if (res.status === 200) {

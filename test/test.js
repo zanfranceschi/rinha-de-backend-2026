@@ -78,7 +78,6 @@ export default function () {
 }
 
 export function handleSummary(data) {
-    // Constantes do scoring (ver docs/superpowers/specs/2026-04-22-logarithmic-scoring-design.md)
     const K = 1000;
     const T_MAX_MS = 1000;
     const P99_MIN_MS = 1;

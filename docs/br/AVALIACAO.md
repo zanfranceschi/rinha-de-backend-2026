@@ -177,6 +177,6 @@ Algumas observações que podem ser úteis.
 
 **A taxa de erro ponderada não depende do tamanho do teste.** Não dá para "diluir" erros aumentando o volume — a taxa na mesma faixa resulta no mesmo `rate_component`. A `absolute_penalty`, por outro lado, cresce em escala logarítmica com o volume real de erros; backends que falham em larga escala perdem mais pontos do que os que falham em escala pequena.
 
-**Quando ANN vale a pena.** Força bruta em 1 milhão de vetores com 14 dimensões por consulta pode ficar caro computacionalmente. Adotar ANN (HNSW, IVF) ou um banco vetorial pronto pode ajudar. Mas sempre meça antes de complicar.
+**Quando ANN vale a pena.** Força bruta em 3 milhões de vetores com 14 dimensões por consulta pode ficar caro computacionalmente. Adotar ANN (HNSW, IVF) ou um banco vetorial pronto pode ajudar. Mas sempre meça antes de complicar.
 
 **Os arquivos de referência não mudam durante o teste.** Você pode pré-processar à vontade no startup ou no build do container — quanto mais processamento sai de dentro do teste, melhor tende a ficar o `p99`.

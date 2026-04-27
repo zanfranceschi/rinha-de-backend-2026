@@ -4,7 +4,7 @@ You receive three files that must be used to decide whether transactions are fra
 
 | File | Size | Purpose |
 |---|---|---|
-| [`resources/references.json.gz`](/resources/references.json.gz) | ~16 MB (gzipped) / ~100 MB | 1,000,000 labeled vectors — the reference base that your vector search queries. |
+| [`resources/references.json.gz`](/resources/references.json.gz) | ~16 MB (gzipped) / ~284 MB | 3,000,000 labeled vectors — the reference base that your vector search queries. |
 | [`resources/mcc_risk.json`](/resources/mcc_risk.json) | <1 KB | Risk score by MCC (merchant category). |
 | [`resources/normalization.json`](/resources/normalization.json) | <1 KB | Constants for normalizing payload fields. |
 
@@ -20,7 +20,7 @@ This is the main dataset against which your vector search runs. Each record has 
 ]
 ```
 
-**Why is it gzipped?** The uncompressed file is about 10 MB; compressed, it drops to about 1.6 MB. The `.gz` version is distributed to save space.
+**Why is it gzipped?** The uncompressed file is about 284 MB; compressed, it drops to about 16 MB. The `.gz` version is distributed to save space.
 
 **The `-1` sentinel value.** Indices `5` (`minutes_since_last_tx`) and `6` (`km_from_last_tx`) receive `-1` when the transaction arrives with `last_transaction: null` (no previous transaction). Since `-1` sits clearly outside the `0.0–1.0` range, "no history" transactions naturally end up close to other "no history" transactions in the vector space — KNN groups both situations together without any special handling. The dataset vectors follow the same convention, so you **cannot filter or replace** these `-1` values.
 

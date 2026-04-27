@@ -166,7 +166,7 @@ The example above uses **Euclidean distance**, but that is only one of the optio
 
 ### Exact KNN vs ANN (Approximate Nearest Neighbors)
 
-The simplest way to find the K nearest neighbors is **exact KNN**: iterate through all references, calculate the distance to each one, and sort. It works, but it costs O(N) per query. With 1M references and a tight latency budget, it can become too expensive.
+The simplest way to find the K nearest neighbors is **exact KNN**: iterate through all references, calculate the distance to each one, and sort. It works, but it costs O(N) per query. With 3M references and a tight latency budget, it can become too expensive.
 
 **ANN** is an alternative: data structures that give up a bit of accuracy to respond faster. Some families:
 

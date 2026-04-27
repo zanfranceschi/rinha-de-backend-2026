@@ -4,7 +4,7 @@ Você recebe três arquivos necessários para decidir se as transações são ou
 
 | Arquivo | Tamanho | Para quê |
 |---|---|---|
-| [`resources/references.json.gz`](/resources/references.json.gz) | ~16 MB (gzipado) / ~100 MB | 1.000.000 vetores rotulados que sua busca vetorial consulta. |
+| [`resources/references.json.gz`](/resources/references.json.gz) | ~16 MB (gzipado) / ~284 MB | 3.000.000 vetores rotulados que sua busca vetorial consulta. |
 | [`resources/mcc_risk.json`](/resources/mcc_risk.json) | <1 KB | Score de risco por MCC (categoria do comerciante). |
 | [`resources/normalization.json`](/resources/normalization.json) | <1 KB | Constantes para normalizar os campos do payload. |
 
@@ -20,7 +20,7 @@ Esse é o dataset principal contra o qual sua busca vetorial é executada. Cada 
 ]
 ```
 
-**Por que vem gzipado.** Descomprimido, o arquivo tem ~10 MB; comprimido, ~1,6 MB. A distribuição é feita em `.gz` para economizar tamanho.
+**Por que vem gzipado.** Descomprimido, o arquivo tem ~284 MB; comprimido, ~16 MB. A distribuição é feita em `.gz` para economizar tamanho.
 
 **O valor sentinela `-1`.** Os índices `5` (`minutes_since_last_tx`) e `6` (`km_from_last_tx`) recebem `-1` quando a transação chega com `last_transaction: null` (ou seja, não existe transação anterior). Como `-1` está fora do intervalo `0.0–1.0`, transações sem histórico ficam naturalmente próximas de outras sem histórico no espaço vetorial — o KNN (k-vizinhos mais próximos) agrupa as duas situações sem precisar de tratamento especial. Os vetores do dataset seguem a mesma convenção, portanto **não filtre nem substitua** esses `-1`.
 

@@ -64,7 +64,7 @@ The 14 dimensions, the normalization formulas and the constants are in [DETECTIO
 
 You receive three files. They don't change during the test, so you can pre-process them at build time or at container startup.
 
-- `references.json.gz` — 1,000,000 vectors labeled as `fraud` or `legit`.
+- `references.json.gz` — 3,000,000 vectors labeled as `fraud` or `legit`.
 - `mcc_risk.json` — risk by merchant category.
 - `normalization.json` — constants used in normalization.
 

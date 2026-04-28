@@ -5,12 +5,13 @@ import { Counter } from 'k6/metrics';
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 import exec from 'k6/execution';
 
-const testFile = JSON.parse(open('./test-data.json'));
-const expectedStats = testFile.stats;
-
 const testData = new SharedArray('test-data', function () {
-    return testFile.entries;
+    return JSON.parse(open('./test-data.json')).entries;
 });
+const statsArr = new SharedArray('test-stats', function () {
+    return [JSON.parse(open('./test-data.json')).stats];
+});
+const expectedStats = statsArr[0];
 
 const tpCount = new Counter('tp_count');
 const tnCount = new Counter('tn_count');
@@ -30,8 +31,8 @@ export const options = {
             executor: 'ramping-arrival-rate',
             startRate: 1,
             timeUnit: '1s',
-            preAllocatedVUs: 100,
-            maxVUs: 200,
+            preAllocatedVUs: 50,
+            maxVUs: 100,
             gracefulStop: '10s',
             stages: [
                 { duration: '120s', target: 650 },

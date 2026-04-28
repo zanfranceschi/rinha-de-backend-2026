@@ -653,6 +653,8 @@ static void usage(const char *prog) {
         "  --refs-in PATH       input path for references.json when --reuse-refs is set\n"
         "                       (default: resources/references.json)\n"
         "  --payloads-out PATH  output path for test-data.json (default: test/test-data.json)\n"
+        "  --refs-seed N        RNG seed for reference generation (default: 42)\n"
+        "  --payloads-seed N    RNG seed for payload generation (default: 4242)\n"
         "  --pretty-json        indent JSON output (default: compact)\n"
         "  --help               show this message\n",
         prog);
@@ -668,6 +670,8 @@ int main(int argc, char **argv) {
     const char *refs_in       = "resources/references.json";
     int reuse_refs            = 0;
     const char *payloads_out  = "test/test-data.json";
+    uint64_t refs_seed        = REF_SEED;
+    uint64_t payloads_seed    = PAY_SEED;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--refs") == 0 && i + 1 < argc)
@@ -690,6 +694,10 @@ int main(int argc, char **argv) {
             reuse_refs = 1;
         else if (strcmp(argv[i], "--payloads-out") == 0 && i + 1 < argc)
             payloads_out = argv[++i];
+        else if (strcmp(argv[i], "--refs-seed") == 0 && i + 1 < argc)
+            refs_seed = strtoull(argv[++i], NULL, 10);
+        else if (strcmp(argv[i], "--payloads-seed") == 0 && i + 1 < argc)
+            payloads_seed = strtoull(argv[++i], NULL, 10);
         else if (strcmp(argv[i], "--pretty-json") == 0)
             pretty_json = 1;
         else if (strcmp(argv[i], "--help") == 0) {
@@ -717,7 +725,7 @@ int main(int argc, char **argv) {
     } else {
         printf("Generating %d reference vectors...\n", ref_size);
         refs = malloc((size_t)ref_size * sizeof(RefVec));
-        rng_init(&rng, REF_SEED);
+        rng_init(&rng, refs_seed);
 
         for (int i = 0; i < ref_size; i++) {
             Profile p   = pick_profile(&rng, fraud_ratio_refs);
@@ -754,7 +762,7 @@ int main(int argc, char **argv) {
 
     /* --- Payloads de teste --- */
     printf("Generating %d test payloads...\n", payload_size);
-    rng_init(&rng, PAY_SEED);
+    rng_init(&rng, payloads_seed);
 
     TestEntry *entries = malloc((size_t)payload_size * sizeof(TestEntry));
     for (int i = 0; i < payload_size; i++) {

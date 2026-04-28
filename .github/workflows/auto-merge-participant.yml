@@ -275,10 +275,12 @@ jobs:
   # no repo), nenhum outro job consegue lê-lo por engano.
   notify:
     needs: [validate, merge]
-    if: >
-      always()
-      && (needs.merge.result == 'success'
-          || (needs.validate.result == 'success' && needs.validate.outputs.should_merge == 'false'))
+    # TEMPORARIAMENTE DESABILITADO — trocar `if: false` pela condição original abaixo para reativar.
+    if: false
+    # if: >
+    #   always()
+    #   && (needs.merge.result == 'success'
+    #       || (needs.validate.result == 'success' && needs.validate.outputs.should_merge == 'false'))
     runs-on: ubuntu-latest
     timeout-minutes: 3
     environment: default

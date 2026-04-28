@@ -32,7 +32,7 @@ export const options = {
             startRate: 1,
             timeUnit: '1s',
             preAllocatedVUs: 50,
-            maxVUs: 100,
+            maxVUs: 200,
             gracefulStop: '10s',
             stages: [
                 { duration: '120s', target: 650 },

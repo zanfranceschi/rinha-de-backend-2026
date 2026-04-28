@@ -1,10 +1,10 @@
 [
   {
-    "id": "davidalecrim1-rust",
-    "repo": "https://github.com/davidalecrim1/rinha-with-rust-2026"
-  },
-  {
     "id": "davidalecrim1-rust-extreme",
     "repo": "https://github.com/davidalecrim1/rinha-with-rust-extreme-2026"
+  },
+  {
+    "id": "davidalecrim1-rust",
+    "repo": "https://github.com/davidalecrim1/rinha-with-rust-2026"
   }
 ]

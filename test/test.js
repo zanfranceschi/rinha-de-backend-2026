@@ -20,6 +20,7 @@ const errorCount = new Counter('error_count');
 
 export const options = {
     summaryTrendStats: ['p(99)'],
+    systemTags: ['status', 'method'],
     dns: {
         ttl: '5m',
         select: 'roundRobin',
@@ -33,7 +34,7 @@ export const options = {
             maxVUs: 30,
             gracefulStop: '10s',
             stages: [
-                { duration: '60s', target: 650 },
+                { duration: '120s', target: 650 },
             ],
         },
     },

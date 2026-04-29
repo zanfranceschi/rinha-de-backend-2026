@@ -35,7 +35,7 @@ export const options = {
             maxVUs: 250,
             gracefulStop: '10s',
             stages: [
-                { duration: '120s', target: 100 },
+                { duration: '120s', target: 900 },
             ],
         },
     },
@@ -54,7 +54,7 @@ export default function () {
     const idx = exec.scenario.iterationInTest;
     if (idx >= testData.length) return;
     const entry = testData[idx];
-    const expected = entry.info.expected_response;
+    const expectedApproved = entry.expected_approved;
 
     const res = http.post(
         'http://localhost:9999/fraud-score',
@@ -64,10 +64,10 @@ export default function () {
 
     if (res.status === 200) {
         const body = JSON.parse(res.body);
-        // Per-request scoring: compare against expected.approved
-        // expected.approved === true  --> legit transaction
-        // expected.approved === false --> fraud transaction
-        if (expected.approved === body.approved) {
+        // Per-request scoring: compare against expectedApproved
+        // expectedApproved === true  --> legit transaction
+        // expectedApproved === false --> fraud transaction
+        if (expectedApproved === body.approved) {
             if (body.approved) tnCount.add(1); // correctly approved legit
             else tpCount.add(1);               // correctly denied fraud
         } else {

@@ -547,7 +547,7 @@ static double euclidean_dist(const double *a, const double *b) {
         double d = a[i] - b[i];
         sum += d * d;
     }
-    return sqrt(sum);
+    return sum;
 }
 
 static void knn_classify(const double *vec, const RefVec *refs, int nrefs,
@@ -798,14 +798,8 @@ int main(int argc, char **argv) {
     for (int i = 0; i < payload_size; i++) {
         cJSON *entry = cJSON_CreateObject();
         cJSON_AddItemToObject(entry, "request", request_to_json(&entries[i].req));
-
-        cJSON *info = cJSON_AddObjectToObject(entry, "info");
-        cJSON_AddItemToObject(info, "vector", jnum_array(entries[i].vec, VDIM));
-
-        cJSON *resp = cJSON_AddObjectToObject(info, "expected_response");
-        cJSON_AddBoolToObject(resp, "approved", entries[i].approved);
-        cJSON_AddItemToObject(resp, "fraud_score", jnum(entries[i].fraud_score));
-
+        cJSON_AddBoolToObject(entry, "expected_approved", entries[i].approved);
+        cJSON_AddItemToObject(entry, "expected_fraud_score", jnum(entries[i].fraud_score));
         cJSON_AddItemToArray(arr, entry);
     }
 

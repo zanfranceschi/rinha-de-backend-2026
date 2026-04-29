@@ -1,7 +1,9 @@
-ifeq ($(shell uname -s),Darwin)
-    CC ?= gcc-15
-else
-    CC ?= gcc
+ifeq ($(origin CC),default)
+    ifeq ($(shell uname -s),Darwin)
+        CC := gcc-15
+    else
+        CC := gcc
+    endif
 endif
 CFLAGS = -O2 -Wall -Wextra -fopenmp
 SRCS   = main.c cjson/cJSON.c

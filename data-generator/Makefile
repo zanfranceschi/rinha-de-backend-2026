@@ -1,5 +1,5 @@
 CC     = gcc
-CFLAGS = -O2 -Wall -Wextra
+CFLAGS = -O2 -Wall -Wextra -fopenmp
 SRCS   = main.c cjson/cJSON.c
 TARGET = generate
 

@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <time.h>
+#include <omp.h>
 #include "cjson/cJSON.h"
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -765,11 +766,16 @@ int main(int argc, char **argv) {
     rng_init(&rng, payloads_seed);
 
     TestEntry *entries = malloc((size_t)payload_size * sizeof(TestEntry));
+    /* Pass 1 (sequencial): consome RNG — determinismo bit-a-bit. */
     for (int i = 0; i < payload_size; i++) {
         Profile p = pick_profile(&rng, fraud_ratio_payloads);
         entries[i].req = gen_request(&rng, p, &mcc);
         normalize(&entries[i].req, &norm, &mcc, entries[i].vec);
         for (int j = 0; j < VDIM; j++) entries[i].vec[j] = round4(entries[i].vec[j]);
+    }
+    /* Pass 2 (paralelo): KNN é puro — cada i é independente. */
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < payload_size; i++) {
         knn_classify(entries[i].vec, refs, ref_size, &entries[i].approved, &entries[i].fraud_score);
         entries[i].fraud_score = round4(entries[i].fraud_score);
     }

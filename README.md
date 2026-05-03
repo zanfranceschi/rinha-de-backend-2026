@@ -12,7 +12,7 @@
 
 ## Português
 
-A **Rinha de Backend** é uma competição amistosa em que você constrói um backend sob restrições de CPU e memória. Cada edição traz um tema diferente — e o desta vez é **detecção de fraude em transações de cartão usando busca vetorial**.
+A **Rinha de Backend** é uma competição amistosa em que você constrói um backend sob restrições de CPU, memória, e arquitetura. Cada edição traz um tema diferente – e o desta vez é **detecção de fraudes usando busca vetorial**.
 
 **Documentação completa do desafio:** [**docs/br/README.md**](./docs/br/README.md)
 
@@ -23,7 +23,7 @@ A **Rinha de Backend** é uma competição amistosa em que você constrói um ba
 - [**2023** — CRUD de Pessoas](https://github.com/zanfranceschi/rinha-de-backend-2023-q3)
 
 ### Redes sociais
-
+- [Website Oficial](https://rinhadebackend.com.br/)
 - [Discord](https://discord.gg/Eca6gJba8R)
 - [X / Twitter](https://x.com/rinhadebackend)
 - [LinkedIn](https://www.linkedin.com/company/108194083)
@@ -33,7 +33,7 @@ A **Rinha de Backend** é uma competição amistosa em que você constrói um ba
 
 ## English
 
-**Rinha de Backend** is a friendly competition where you build a backend under CPU and memory constraints. Each edition has a different theme — this one is **credit card fraud detection using vector search**.
+**Rinha de Backend** is a friendly competition where you build a backend under CPU, memory, and architecture constraints. Each edition has a different theme – this one is **fraud detection using vector search**.
 
 **Full challenge documentation:** [**docs/en/README.md**](./docs/en/README.md)
 
@@ -45,6 +45,7 @@ A **Rinha de Backend** é uma competição amistosa em que você constrói um ba
 
 ### Social media
 
+- [Official Website](https://rinhadebackend.com.br/)
 - [Discord](https://discord.gg/Eca6gJba8R)
 - [X / Twitter](https://x.com/rinhadebackend)
 - [LinkedIn](https://www.linkedin.com/company/108194083)

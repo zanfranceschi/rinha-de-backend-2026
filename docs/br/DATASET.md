@@ -1,6 +1,6 @@
 # Dataset — arquivos de referência
 
-Você recebe três arquivos necessários para decidir se as transações são ou não fraudulentas.
+Nessa edição, você precisa de informações que estão em arquivos distribuídos nesse repositório.
 
 | Arquivo | Tamanho | Para quê |
 |---|---|---|
@@ -78,4 +78,4 @@ Essas são as constantes usadas nas fórmulas de [REGRAS_DE_DETECCAO.md](./REGRA
 | `max_merchant_avg_amount` | Teto para o ticket médio do comerciante. |
 
 
-**Importante.** Os três arquivos não mudam durante o teste, então você pode pré-processá-los à vontade — descomprimir, indexar, construir estruturas de busca (por exemplo, HNSW), converter para outro formato, etc.
+**Importante.** Os três arquivos não mudam durante o teste, então você pode pré-processá-los à vontade — descomprimir, indexar, converter para outro formato, etc.

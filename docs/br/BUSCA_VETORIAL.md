@@ -10,7 +10,7 @@ Cada transação é representada por um **vetor** — uma lista de números que 
 
 A busca vetorial responde à pergunta:
 
-> *"Dada esta transação nova, quais transações do histórico mais se parecem com ela?"*
+> *"Dada esta transação nova, quais transações do histórico mais se aproximam dela?"*
 
 Se as transações mais parecidas foram classificadas como fraude, a nova provavelmente também é. Se foram legítimas, a nova provavelmente é legítima.
 
@@ -105,7 +105,7 @@ Aqui, usando a distância euclidiana com 3 dimensões, fica:
 | 1 | [0.0100, 0.0833, 0.05]    | legit | 1.605                             |
 | 6 | [0.0092, 0.0833, 0.05]    | legit | 1.606                             |
 
-### 5. Os K=3 vizinhos mais próximos
+### 5. Os K=3 vizinhos mais próximos (KNN de K=3)
 
 Selecionamos os `3` vizinhos mais próximos:
 
@@ -149,7 +149,7 @@ fraud_score (1.0) >= threshold (0.6) → transação NEGADA
 
 O exemplo mostra uma transação cujas 3 referências mais próximas estão rotuladas como fraude. Isso significa que o "formato" da transação — baseado nas referências — provavelmente é o de uma fraude. Os três vizinhos mais próximos têm em comum *valor alto, horário tardio e portador de alto padrão*.
 
-A busca vetorial **não "entende" fraude** — ela apenas encontra as transações passadas mais parecidas e deixa a maioria decidir o rótulo da nova.
+A busca vetorial **não "entende" fraude** — ela apenas encontra as transações passadas mais parecidas e deixa a maioria (votação) ou a proximidade ponderada decidir o rótulo da nova.
 
 Em termos de Machine Learning, isso se chama **aprendizado supervisionado não-paramétrico** (ou *instance-based learning*): não existe modelo treinado, apenas o dataset memorizado e a busca feita em tempo de consulta.
 
@@ -165,13 +165,22 @@ O exemplo acima usa **distância euclidiana**, mas ela é apenas uma das opçõe
 
 ### KNN exato vs ANN (Approximate Nearest Neighbors)
 
-A forma mais simples de encontrar os K vizinhos mais próximos é o **KNN exato**: percorrer todas as referências, calcular a distância para cada uma e ordenar. Funciona, mas custa O(N) por consulta — com 3 milhões de referências e um orçamento de latência apertado, pode ser caro demais.
+A forma mais simples de encontrar os K vizinhos mais próximos é o **KNN exato por força bruta**: percorrer todas as referências, calcular a distância para cada uma e ordenar. Funciona, mas custa O(N * D) (D = dimensão dos vetores) por consulta — com 3 milhões de referências e um orçamento de latência apertado, pode ser caro demais.
 
 **ANN** é uma alternativa: estruturas de dados que abrem mão de um pouco de precisão para responder mais rápido. Algumas famílias:
 
 - **HNSW** (Hierarchical Navigable Small World) — grafo em camadas. É o que pgvector, Qdrant e a maioria dos bancos vetoriais usam por padrão. Consulta em **`O(log N)`**.
 - **IVF** (Inverted File Index) — particiona o espaço em "células" e busca apenas nas mais próximas da consulta. Consulta em **`O(√N)`** com particionamento típico.
 - **LSH** (Locality-Sensitive Hashing) — funções de hash que colidem para vetores parecidos. Consulta em **`O(N^ρ)`** com `ρ < 1` (sub-linear; depende do fator de aproximação).
+
+Existem também outras formas de realizar **busca exata** sem usar força bruta:
+
+- **KD-Tree** (K-Dimensional Tree) – Divide o espaço usando hiperplanos ortogonais. Em cada nível, escolhe um eixo e divide os pontos pela mediana.
+- **VP-Tree** (Vantage Point Tree) – Divide o espaço usando distâncias esféricas. Escolhe um ponto fixo e separa os demais entre "dentro" ou "fora" de um raio circular.
+- **Ball Tree** – Agrupa pontos em hiperesferas aninhadas. Ao contrário da KD-Tree, as regiões (bolas) podem se sobrepor, mas são mais eficientes em dimensões ligeiramente maiores.
+- **Cover Tree** – Organiza os dados em uma hierarquia de níveis baseada em escalas de distância (geralmente potências de 2).
+- **BK-Tree** (Burkhard-Keller Tree) – Especializada para distâncias discretas (valores inteiros). Organiza os nós com base na distância exata de cada filho para o pai.
+
 
 #### Qual abordagem usar nesta Rinha de Backend?
 

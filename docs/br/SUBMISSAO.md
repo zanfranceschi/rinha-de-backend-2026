@@ -6,7 +6,7 @@ Este documento descreve como submeter o seu backend para a Rinha de Backend 2026
 
 Para que o seu backend seja oficialmente testado, você deve abrir um [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) adicionando um arquivo JSON no diretório [./participants](./participants) com informações sobre a sua participação.
 
-O nome do arquivo deve ser exatamente o seu usuário no github.com — por exemplo, `./participants/ana.json`. O seu repositório git precisa ser público.
+O nome do arquivo deve ser exatamente o seu usuário no github.com — por exemplo, `./participants/ana.json`. O seu repositório git precisa ser e se manter público.
 
 Exemplo do conteúdo do arquivo para uma submissão:
 

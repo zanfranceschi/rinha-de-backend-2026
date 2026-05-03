@@ -10,7 +10,7 @@ Each transaction is represented by a **vector** — a list of numbers describing
 
 A vector search answers the question:
 
-> *"Given this new transaction, which transactions in my history look most like it?"*
+> *"Given this new transaction, which transactions in my history are closest to it?"*
 
 If the most similar past transactions were classified as fraud, the new one probably is too. If they were legitimate, it is probably legitimate.
 
@@ -106,7 +106,7 @@ Using Euclidean distance with 3 dimensions, the formula is:
 | 1 | [0.0100, 0.0833, 0.05]    | legit | 1.605                             |
 | 6 | [0.0092, 0.0833, 0.05]    | legit | 1.606                             |
 
-### 5. The K=3 nearest neighbors
+### 5. The K=3 nearest neighbors (KNN with K=3)
 
 You then select the `3` nearest neighbors.
 
@@ -150,7 +150,7 @@ fraud_score (1.0) >= threshold (0.6) → transaction DENIED
 
 The example above shows a transaction whose 3 nearest references were labeled as fraud. This means that the "shape" of the transaction, based on the references, looks most like a fraud. The three nearest neighbors share in common *high amount, late hour, and high-end cardholder*.
 
-The vector search **does not "understand" fraud** — it just finds the most similar past transactions and lets the majority decide the label of the new one.
+The vector search **does not "understand" fraud** — it just finds the most similar past transactions and lets the majority (voting) or weighted proximity decide the label of the new one.
 
 In Machine Learning terms, this is called **non-parametric supervised learning** (also known as *instance-based learning*): there is no trained model, just the memorized dataset and a search at query time.
 
@@ -166,7 +166,7 @@ The example above uses **Euclidean distance**, but that is only one of the optio
 
 ### Exact KNN vs ANN (Approximate Nearest Neighbors)
 
-The simplest way to find the K nearest neighbors is **exact KNN**: iterate through all references, calculate the distance to each one, and sort. It works, but it costs O(N) per query. With 3M references and a tight latency budget, it can become too expensive.
+The simplest way to find the K nearest neighbors is **exact KNN via brute force**: iterate through all references, calculate the distance to each one, and sort. It works, but it costs O(N * D) (D = vector dimensions) per query. With 3M references and a tight latency budget, it can become too expensive.
 
 **ANN** is an alternative: data structures that give up a bit of accuracy to respond faster. Some families:
 
@@ -174,7 +174,16 @@ The simplest way to find the K nearest neighbors is **exact KNN**: iterate throu
 - **IVF** (Inverted File Index) — partitions the space into "cells" and searches only in the ones closest to the query. Query in **`O(√N)`** with typical partitioning.
 - **LSH** (Locality-Sensitive Hashing) — hash functions that collide for similar vectors. Query in **`O(N^ρ)`** with `ρ < 1` (sub-linear; depends on the approximation factor).
 
-#### Which distance metric to use for this Rinha de Backend?
+There are also other ways to perform **exact search** without brute force:
+
+- **KD-Tree** (K-Dimensional Tree) – Splits the space using orthogonal hyperplanes. At each level, it picks an axis and splits the points by the median.
+- **VP-Tree** (Vantage Point Tree) – Splits the space using spherical distances. It picks a fixed point and separates the rest between "inside" or "outside" a circular radius.
+- **Ball Tree** – Groups points into nested hyperspheres. Unlike KD-Tree, the regions (balls) can overlap, but they are more efficient in slightly higher dimensions.
+- **Cover Tree** – Organizes the data in a hierarchy of levels based on distance scales (usually powers of 2).
+- **BK-Tree** (Burkhard-Keller Tree) – Specialized for discrete distances (integer values). Organizes nodes based on the exact distance from each child to the parent.
+
+
+#### Which approach to use for this Rinha de Backend?
 
 You can use **brute force, KNN, ANN, a vector database, a trained AI model, a pile of IF/ELSE**, or anything else. You will need to find the balance between vector search accuracy and performance — the strategy is up to you.
 

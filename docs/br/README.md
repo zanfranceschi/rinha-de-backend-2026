@@ -1,6 +1,6 @@
 # Rinha de Backend 2026 – Detecção de fraude por busca vetorial!
 
-> **Atenção!** Esta edição está em fase de validação: as regras ainda podem mudar e as datas ainda não foram definidas. De toda forma, qualquer pessoa já pode participar para se divertir, aprender e ajudar na melhoria dessa edição — basta desenvolver o seu backend e submetê-lo para testes de prévia.
+**Atenção!** Esta edição ainda não tem data de término definida!
 
 ## O desafio
 

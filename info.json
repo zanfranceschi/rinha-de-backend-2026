@@ -1,0 +1,29 @@
+{
+  "participants": [
+    "Victor Calazans"
+  ],
+  "social": [
+    "https://github.com/vcalazans",
+    "https://www.linkedin.com/in/victor-calazans-b15787b8/"
+  ],
+  "source-code-repo": "https://github.com/vcalazans/rinha-de-backend-2026",
+  "stack": [
+    "c",
+    "gcc",
+    "mongoose.h",
+    "yyjson",
+    "vptree",
+    "nginx",
+    "docker"
+  ],
+  "open_to_work": true,
+  "architecture": {
+    "language": "C11",
+    "compiler": "gcc -O3",
+    "http_server": "mongoose.h (single-header)",
+    "json_parser": "yyjson (single-file)",
+    "vector_index": "VP-Tree (100% recall)",
+    "storage": "Binary flat file with mmap",
+    "deployment": "Docker multi-stage, alpine runtime"
+  }
+}

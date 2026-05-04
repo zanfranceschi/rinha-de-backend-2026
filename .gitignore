@@ -1,6 +1,42 @@
-.claude
-data-generator/generate
+# Build artifacts
+src/server
+src/*.o
+src/vendor/*.o
+tools/build_index
+tests/test_runner
+tests/test_runner.dSYM/
+
+# Data
 resources/references.json
 .env
 test/results.json
+test/test_local.js
+data-generator/generate
 temporary-results
+
+# Claude / AI tooling
+.claude/
+.mcp.json
+CLAUDE.md
+AGENTS.md
+DEVOPS.md
+DOCKER.md
+OPTIMIZATION-PLAN.md
+SUBMISSION-CHECKLIST.md
+memory-bank/
+docs/generic-code-setup.md
+
+# Generated docs
+START-HERE.txt
+SUBMISSION-*.md
+SUBMISSION-*.txt
+SUBMISSION-STEPS.sh
+FILES-FOR-SUBMISSION.txt
+PREPARED-FILES.txt
+SUBMISSION-VISUAL-GUIDE.txt
+INDEX.md
+docker-compose.FINAL.yml
+docker-compose.submission.yml
+
+# OS
+.DS_Store

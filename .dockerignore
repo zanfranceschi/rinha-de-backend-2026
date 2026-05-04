@@ -1,0 +1,54 @@
+# .dockerignore — Evita copiar arquivos desnecessarios durante Docker build
+
+# VCS
+.git
+.gitignore
+.github
+
+# Claude Code
+.claude
+.mcp.json
+AGENTS.md
+CLAUDE.md
+
+# Documentacao
+docs
+*.md
+README.md
+
+# Memory Bank e contexto
+memory-bank
+
+# Participantes e dados de teste
+participants
+data-generator
+
+# Arquivos de teste
+test
+tests
+*.test.js
+k6.js
+
+# Misc
+misc
+*.nix
+*.sh
+shell.nix
+config.json
+
+# Pre-compiled binaries (ARM64 on Mac, incompatible with linux/amd64)
+src/server
+src/*.o
+src/vendor/*.o
+tools/build_index
+
+# MacOS
+.DS_Store
+*.xcodeproj
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+*~

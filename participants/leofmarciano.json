@@ -18,5 +18,13 @@
   {
     "id": "leofmarciano-k8192-p16",
     "repo": "https://github.com/leofmarciano/rinha-2026-native-k8192-p16"
+  },
+  {
+    "id": "leofmarciano-k8192-w2",
+    "repo": "https://github.com/leofmarciano/rinha-2026-native-k8192-w2"
+  },
+  {
+    "id": "leofmarciano-k4096-w2",
+    "repo": "https://github.com/leofmarciano/rinha-2026-native-k4096-w2"
   }
 ]

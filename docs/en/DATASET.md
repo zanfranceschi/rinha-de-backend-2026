@@ -1,6 +1,6 @@
 # Dataset — reference files
 
-You receive three files that must be used to decide whether transactions are fraudulent.
+In this edition, you need information contained in files distributed in this repository.
 
 | File | Size | Purpose |
 |---|---|---|
@@ -78,4 +78,4 @@ These are the constants used in the formulas of [DETECTION_RULES.md](./DETECTION
 | `max_merchant_avg_amount` | Ceiling for the merchant's average ticket. |
 
 
-**Important:** The three files do not change during the test or the edition, so they can be pre-processed freely (decompressed, indexed, loaded into search structures such as HNSW, converted to another format, and so on).
+**Important:** The three files do not change during the test or the edition, so they can be pre-processed freely — decompressed, indexed, converted to another format, etc.

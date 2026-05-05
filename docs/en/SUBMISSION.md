@@ -30,7 +30,7 @@ The file holds an array, so you can submit more than one backend if you want. Fo
 }]
 ```
 
-The filename must be exactly your github.com username, placed inside the [./participants](./participants) directory — for example, `./participants/ana.json`. Your git repository also needs to be public.
+The filename must be exactly your github.com username, placed inside the [./participants](./participants) directory — for example, `./participants/ana.json`. Your git repository also needs to be and remain public.
 
 ## Repository structure
 

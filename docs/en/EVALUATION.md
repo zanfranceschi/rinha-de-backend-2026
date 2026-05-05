@@ -12,11 +12,11 @@ The instructions for actually having your backend tested are [described here](/d
 
 ## What is tested
 
-The test uses [payloads](/test/test-data.json) already labeled based on the [references](/resources/references.json.gz). The labeling was done by applying **k-NN with k=5 and Euclidean distance** over the 14-dimensional vectors. That is, for each request there is an expected correct answer (fraud or legitimate). This does not force you to use k-NN with Euclidean distance in your vector search — you can use other distance metrics, usually at the cost of losing some detection accuracy.
+The test uses [payloads](/test/test-data.json) already labeled based on the [references](/resources/references.json.gz). The labeling was done by applying **k-NN with k=5 and Euclidean distance with brute force** – exact search – over the 14-dimensional vectors. That is, for each request there is an expected answer (fraud or legitimate). This does not force you to use the same technique – using brute force will likely have very poor performance (*O(N * 14)*) for this challenge.
 
 ## Collected metrics
 
-The test dataset comes pre-labeled — for each request, whether the transaction is fraud or legitimate is known in advance. The test compares your backend's response (`approved: true|false`) with the expected label and classifies each request into one of the five categories below. The first four form the classic binary-classification confusion matrix; the last covers the case where your backend does not respond successfully:
+The test dataset comes pre-labeled — for each request, whether the transaction is fraud or legitimate is known in advance. The test compares your backend's response (`approved: true|false`) with the expected label and classifies each response into one of the five categories below. The first four form the classic binary-classification confusion matrix; the last covers the case where your backend does not respond successfully:
 
 - **TP (True Positive)** — fraud correctly denied.
 - **TN (True Negative)** — legitimate transaction correctly approved.
@@ -28,7 +28,7 @@ These five counts, together with the observed latency, feed the formula describe
 
 ## Scoring examples
 
-In some cases it is easier to understand the scoring by looking at concrete scenarios than at the formula. The table below shows a few representative scenarios, all with N = 5000 requests, ordered from best to worst — including the two cutoffs (more than 15% failures and p99 above 2000ms) and the extreme where both trigger together. The details of each column are explained in the following sections; for now, it is enough to know that `final_score` is the final score, the sum of a latency score (`p99_score`) and a detection score (`detection_score`).
+In some cases it is easier to understand the scoring by looking at examples than at the formula itself. The table below shows a few representative scenarios, all with N = 5000 requests, ordered from best to worst — including the two cutoffs (more than 15% failures and p99 above 2000ms) and the extreme where both trigger together. The details of each column are explained in the following sections; for now, it is enough to know that `final_score` is the final score, the sum of a latency score (`p99_score`) and a detection score (`detection_score`).
 
 | false positive detection | false negative detection | HTTP error | failures (detection + HTTP) / total requests | p99     | p99 score | detection score | final score  |
 |--------------------------|--------------------------|------------|----------------------------------------------|---------|-----------|-----------------|--------------|
@@ -64,6 +64,8 @@ Else:
 - `K = 1000`, `T_max = 1000ms`, `p99_MIN = 1ms`, `p99_MAX = 2000ms`.
 - Ceiling of +3000: when `p99 ≤ 1ms`, the score saturates at 3000 — improvements below that do not add points.
 - Floor of −3000: when `p99 > 2000ms`, the score is fixed at −3000.
+
+*Note: The HTTP requests in the test have a timeout of 2001ms.*
 
 In practice, within the non-cutoff range, every 10× improvement in latency is worth another 1000 points. From 100ms to 10ms: another 1000. From 10ms to 1ms: another 1000. Below 1ms, the score saturates at 3000.
 
@@ -177,6 +179,6 @@ A few observations that may be useful.
 
 **The weighted error rate does not depend on the test size.** You cannot "dilute" errors by increasing the volume — the same rate results in the same `rate_component`. The `absolute_penalty`, on the other hand, grows on a logarithmic scale with the actual error volume; backends that fail at large scale lose more points than those that fail at small scale.
 
-**When ANN is worth it.** Brute force over 3,000,000 vectors with 14 dimensions per query can get computationally expensive. Adopting ANN (HNSW, IVF) or a ready-made vector database can help. But always measure before complicating things.
+**When ANN is worth it.** Brute force over 3,000,000 vectors with 14 dimensions per query can get computationally expensive. Adopting ANN (HNSW, IVF) or even VP Tree, which is an exact search that does not use brute force, can help. But always measure before complicating things.
 
-**The reference files do not change during the test.** You can pre-process freely at startup or during the container build — the more processing you move outside of the test, the better your `p99` tends to be.
+**The reference files do not change during the test.** You can (and probably should) pre-process the reference file with the 3 million vectors freely at startup or during the container build — the more processing you move outside of runtime, the better your `p99` tends to be.

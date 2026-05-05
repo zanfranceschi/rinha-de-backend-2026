@@ -12,11 +12,11 @@ As instruções para que o seu backend seja testado de fato estão [descritas aq
 
 ## O que é testado
 
-O teste usa [payloads](/test/test-data.json) já rotulados a partir das [referências](/resources/references.json.gz). A rotulagem foi feita aplicando **k-NN com k=5 e distância euclidiana** sobre os vetores de 14 dimensões. Ou seja, para cada requisição existe uma resposta correta esperada (fraude ou legítima). Isso não obriga você a usar k-NN com distância euclidiana na sua busca vetorial — você pode usar outras métricas de distância, geralmente ao preço de perder alguma precisão nas detecções.
+O teste usa [payloads](/test/test-data.json) já rotulados a partir das [referências](/resources/references.json.gz). A rotulagem foi feita aplicando **k-NN com k=5 e distância euclidiana com brute force** – busca exata – sobre os vetores de 14 dimensões. Ou seja, para cada requisição existe uma resposta esperada (fraude ou legítima). Isso não obriga você a usar mesma técnica – usar brute force provavelmente terá uma performance muito ruim (*O(N * 14)*) para esse desafio.
 
 ## Métricas coletadas
 
-A massa de dados já vem rotulada — para cada requisição, sabe-se de antemão se a transação é fraude ou legítima. O teste compara a resposta do seu backend (`approved: true|false`) com o rótulo esperado e classifica cada requisição em uma das cinco categorias abaixo. As quatro primeiras formam a matriz de confusão clássica para classificação binária; a última cobre o caso em que o backend não responde com sucesso:
+A massa de dados já vem rotulada — para cada requisição, sabe-se de antemão se a transação é fraude ou legítima. O teste compara a resposta do seu backend (`approved: true|false`) com o rótulo esperado e classifica cada resposta em uma das cinco categorias abaixo. As quatro primeiras formam a matriz de confusão clássica para classificação binária; a última cobre o caso em que o backend não responde com sucesso:
 
 - **TP (True Positive)** — fraude corretamente negada.
 - **TN (True Negative)** — transação legítima corretamente aprovada.
@@ -28,7 +28,7 @@ Essas cinco contagens, junto com a latência observada, alimentam a fórmula des
 
 ## Exemplos de pontuação
 
-Em alguns casos, é mais fácil entender a pontuação olhando para cenários concretos do que para a fórmula. A tabela abaixo traz alguns cenários representativos, todos com N = 5000 requisições, ordenados do melhor para o pior — incluindo os dois cortes (mais de 15% de falhas e p99 acima de 2000ms) e o extremo em que os dois disparam juntos. Os detalhes de cada coluna são explicados nas seções seguintes; por ora, basta saber que `final_score` é a pontuação final, soma de um score de latência (`p99_score`) e um score de detecção (`detection_score`).
+Em alguns casos, é mais fácil entender a pontuação olhando para exemplos do que para a fórmula em si. A tabela abaixo traz alguns cenários representativos, todos com N = 5000 requisições, ordenados do melhor para o pior — incluindo os dois cortes (mais de 15% de falhas e p99 acima de 2000ms) e o extremo em que os dois disparam juntos. Os detalhes de cada coluna são explicados nas seções seguintes; por ora, basta saber que `final_score` é a pontuação final, soma de um score de latência (`p99_score`) e um score de detecção (`detection_score`).
 
 | detecção falsa positiva | detecção falsa negativa | erro HTTP | falhas (detecção + HTTP) / total de requisições | p99      | score p99 | score detecção | score final  |
 |-------------------------|-------------------------|-----------|-------------------------------------------------|----------|-----------|----------------|--------------|
@@ -41,7 +41,7 @@ Em alguns casos, é mais fácil entender a pontuação olhando para cenários co
 | 500                     | 300                     | 0         | 16,00%                                          | 10ms     | 2000,00   | −3000,00       | **−1000,00** |
 | 0                       | 0                       | 5000      | 100,00%                                         | 60000ms  | −3000,00  | −3000,00       | **−6000,00** |
 
-Algumas leituras que a tabela deixa claras:
+Algumas leituras que a tabela deixa clara:
 
 - O `p99_score` tem teto em 3000 (quando p99 é menor ou igual a 1ms) e piso em −3000 (quando p99 passa de 2000ms). Entre os dois limites, cresce em escala logarítmica — cada 10× mais rápido rende mais 1000 pontos.
 - O `detection_score` é livre enquanto a taxa de falhas fica até 15%. Acima disso, é fixado em −3000.
@@ -64,6 +64,8 @@ Senão:
 - `K = 1000`, `T_max = 1000ms`, `p99_MIN = 1ms`, `p99_MAX = 2000ms`.
 - Teto em +3000: quando `p99 ≤ 1ms`, o score satura em 3000 — melhorias abaixo disso não somam pontos.
 - Piso em −3000: quando `p99 > 2000ms`, o score fica fixado em −3000.
+
+*Obs.: As requisições http do teste têm timeout de 2001ms.*
 
 Na prática, dentro da faixa sem corte, cada 10× de melhoria na latência vale mais 1000 pontos. De 100ms para 10ms: mais 1000. De 10ms para 1ms: outros 1000. Abaixo de 1ms, a pontuação satura em 3000.
 
@@ -177,6 +179,6 @@ Algumas observações que podem ser úteis.
 
 **A taxa de erro ponderada não depende do tamanho do teste.** Não dá para "diluir" erros aumentando o volume — a taxa na mesma faixa resulta no mesmo `rate_component`. A `absolute_penalty`, por outro lado, cresce em escala logarítmica com o volume real de erros; backends que falham em larga escala perdem mais pontos do que os que falham em escala pequena.
 
-**Quando ANN vale a pena.** Força bruta em 3 milhões de vetores com 14 dimensões por consulta pode ficar caro computacionalmente. Adotar ANN (HNSW, IVF) ou um banco vetorial pronto pode ajudar. Mas sempre meça antes de complicar.
+**Quando ANN vale a pena.** Força bruta em 3 milhões de vetores com 14 dimensões por consulta pode ficar caro computacionalmente. Adotar ANN (HNSW, IVF) ou até mesmo VP Tree que é uma busca exata que não usa força bruta pode ajudar. Mas sempre meça antes de complicar.
 
-**Os arquivos de referência não mudam durante o teste.** Você pode pré-processar à vontade no startup ou no build do container — quanto mais processamento sai de dentro do teste, melhor tende a ficar o `p99`.
+**Os arquivos de referência não mudam durante o teste.** Você pode (e provavelmente deveria) pré-processar à vontade o arquivo de referência com os 3 milhões de vetores no startup ou no build do container — quanto mais processamento sair de dentro do runtime, melhor tende a ficar o `p99`.

@@ -1,6 +1,6 @@
 # Rinha de Backend 2026 – Fraud detection via vector search!
 
-> **Heads up!** This edition is in a validation phase: rules may still change and the dates have not been defined yet. Even so, anyone can already take part to have fun, learn, and help improve this edition — just develop your backend and submit it for preview tests.
+**Heads up!** This edition does not have a defined end date yet!
 
 ## The challenge
 
@@ -62,7 +62,7 @@ The 14 dimensions, the normalization formulas and the constants are in [DETECTIO
 
 ## Reference files
 
-You receive three files. They don't change during the test, so you can pre-process them at build time or at container startup.
+You receive three files. They don't change during the test, so you can (and should) pre-process them at build time or at container startup.
 
 - `references.json.gz` — 3,000,000 vectors labeled as `fraud` or `legit`.
 - `mcc_risk.json` — risk by merchant category.
@@ -134,13 +134,12 @@ Here's a suggested reading order for this year's documentation.
 ### 4. Participation and evaluation
 
 - **[SUBMISSION.md](./SUBMISSION.md)** — Step-by-step PR guide, branches (`main` and `submission`), how to open the `rinha/test` issue.
-- **[EVALUATION.md](./EVALUATION.md)** — Scoring formula, FP/FN weights, latency multiplier, how to run the test locally.
+- **[EVALUATION.md](./EVALUATION.md)** — Scoring formula, false positive/false negative/error weights, latency multiplier, how to run the test locally.
 - **[FAQ.md](./FAQ.md)** — Frequently asked questions, common pitfalls, what's allowed and what isn't.
 
 ---
 ## Open points
 - Definition of deadlines for submissions and final results
-- Mechanism to aggregate the preview of results
 
 ---
 

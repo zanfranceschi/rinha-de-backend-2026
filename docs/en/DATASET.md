@@ -1,10 +1,10 @@
 # Dataset — reference files
 
-You receive three files that must be used to decide whether transactions are fraudulent.
+In this edition, you need information contained in files distributed in this repository.
 
 | File | Size | Purpose |
 |---|---|---|
-| [`resources/references.json.gz`](/resources/references.json.gz) | ~1.6 MB (gzipped) / ~10 MB | 100,000 labeled vectors — the reference base that your vector search queries. |
+| [`resources/references.json.gz`](/resources/references.json.gz) | ~16 MB (gzipped) / ~284 MB | 3,000,000 labeled vectors — the reference base that your vector search queries. |
 | [`resources/mcc_risk.json`](/resources/mcc_risk.json) | <1 KB | Risk score by MCC (merchant category). |
 | [`resources/normalization.json`](/resources/normalization.json) | <1 KB | Constants for normalizing payload fields. |
 
@@ -20,7 +20,7 @@ This is the main dataset against which your vector search runs. Each record has 
 ]
 ```
 
-**Why is it gzipped?** The uncompressed file is about 10 MB; compressed, it drops to about 1.6 MB. The `.gz` version is distributed to save space.
+**Why is it gzipped?** The uncompressed file is about 284 MB; compressed, it drops to about 16 MB. The `.gz` version is distributed to save space.
 
 **The `-1` sentinel value.** Indices `5` (`minutes_since_last_tx`) and `6` (`km_from_last_tx`) receive `-1` when the transaction arrives with `last_transaction: null` (no previous transaction). Since `-1` sits clearly outside the `0.0–1.0` range, "no history" transactions naturally end up close to other "no history" transactions in the vector space — KNN groups both situations together without any special handling. The dataset vectors follow the same convention, so you **cannot filter or replace** these `-1` values.
 
@@ -78,4 +78,4 @@ These are the constants used in the formulas of [DETECTION_RULES.md](./DETECTION
 | `max_merchant_avg_amount` | Ceiling for the merchant's average ticket. |
 
 
-**Important:** The three files do not change during the test or the edition, so they can be pre-processed freely (decompressed, indexed, loaded into search structures such as HNSW, converted to another format, and so on).
+**Important:** The three files do not change during the test or the edition, so they can be pre-processed freely — decompressed, indexed, converted to another format, etc.

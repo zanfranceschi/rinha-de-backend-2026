@@ -1,6 +1,6 @@
 # Rinha de Backend 2026 – Fraud detection via vector search!
 
-> **Heads up!** This edition is in a validation phase: rules may still change and the dates have not been defined yet. Even so, anyone can already take part to have fun, learn, and help improve this edition — just develop your backend and submit it for preview tests.
+**Heads up!** This edition does not have a defined end date yet!
 
 ## The challenge
 
@@ -58,11 +58,13 @@ For each transaction, your API must:
 
 The 14 dimensions, the normalization formulas and the constants are in [DETECTION_RULES.md](./DETECTION_RULES.md). If you have never worked with vector search, start with [VECTOR_SEARCH.md](./VECTOR_SEARCH.md).
 
+> **Important!** Using the test payloads as a reference or for fraud lookup is not allowed! The final tests will use different payloads, and doing this in the previews distorts the results and discourages other participants.
+
 ## Reference files
 
-You receive three files. They don't change during the test, so you can pre-process them at build time or at container startup.
+You receive three files. They don't change during the test, so you can (and should) pre-process them at build time or at container startup.
 
-- `references.json.gz` — 100,000 vectors labeled as `fraud` or `legit`.
+- `references.json.gz` — 3,000,000 vectors labeled as `fraud` or `legit`.
 - `mcc_risk.json` — risk by merchant category.
 - `normalization.json` — constants used in normalization.
 
@@ -132,13 +134,12 @@ Here's a suggested reading order for this year's documentation.
 ### 4. Participation and evaluation
 
 - **[SUBMISSION.md](./SUBMISSION.md)** — Step-by-step PR guide, branches (`main` and `submission`), how to open the `rinha/test` issue.
-- **[EVALUATION.md](./EVALUATION.md)** — Scoring formula, FP/FN weights, latency multiplier, how to run the test locally.
+- **[EVALUATION.md](./EVALUATION.md)** — Scoring formula, false positive/false negative/error weights, latency multiplier, how to run the test locally.
 - **[FAQ.md](./FAQ.md)** — Frequently asked questions, common pitfalls, what's allowed and what isn't.
 
 ---
 ## Open points
 - Definition of deadlines for submissions and final results
-- Mechanism to aggregate the preview of results
 
 ---
 

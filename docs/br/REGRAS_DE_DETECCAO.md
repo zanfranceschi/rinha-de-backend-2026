@@ -1,13 +1,13 @@
 # Regras de detecção de fraude
 
-Este documento define como a sua API deve transformar uma transação em um vetor de detecção de fraude. Ele cobre a vetorização (as 14 dimensões) e as regras de normalização. A busca vetorial usa esse vetor para encontrar, no dataset de referência, as transações mais parecidas com a que acabou de chegar e, a partir daí, decidir se a nova transação é fraudulenta.
+Este documento define como a sua API deve transformar uma transação em um vetor de detecção de fraude. Ele cobre a vetorização (as 14 dimensões) e as regras de normalização. A busca vetorial usa esse vetor para encontrar, no dataset de referência, as 5 transações mais parecidas com a que acabou de chegar e, a partir daí, decidir se a nova transação é fraudulenta.
 
 Se você ainda não conhece o conceito de busca vetorial, vale a pena começar por [BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md) — lá o assunto é apresentado de forma didática, com um exemplo bem simplificado.
 
 
 ## Visão geral do fluxo
 
-O fluxo abaixo mostra, com um exemplo real de transação legítima, o passo a passo que a sua API deve fazer para decidir sobre uma transação. Neste caso, um cliente faz uma compra de baixo valor em um comerciante que ele já conhece, perto de casa.
+O fluxo abaixo mostra, com um exemplo real da Rinha de Backend de transação legítima, o passo a passo que a sua API deve fazer para decidir sobre uma transação. Neste caso, um cliente faz uma compra de baixo valor em um comerciante que ele já conhece, perto de casa.
 
 ```
 1. recebe a requisição:
@@ -23,7 +23,7 @@ O fluxo abaixo mostra, com um exemplo real de transação legítima, o passo a p
 2. vetoriza e normaliza (14 dimensões):
     [0.0041, 0.1667, 0.05, 0.7826, 0.3333, -1, -1, 0.0292, 0.15, 0, 1, 0, 0.15, 0.006]
           ↓
-3. busca os 5 vizinhos mais próximos (distância euclidiana):
+3. busca os 5 vizinhos mais próximos (ex.: distância euclidiana):
     dist=0.0340  legit
     dist=0.0488  legit
     dist=0.0509  legit
@@ -98,7 +98,9 @@ Depois que o vetor está pronto, a sua API deve:
 2. Calcular `fraud_score` como a fração de fraudes entre essas 5 referências — ou seja, `número_de_fraudes / 5`.
 3. Responder `approved = fraud_score < 0.6`. O threshold de `0.6` é fixo.
 
-Para medir "proximidade" entre dois vetores, os exemplos deste documento usam **distância euclidiana** sobre as 14 dimensões. Essa é a métrica de referência, mas você pode usar outras métricas de distância (como cosseno ou Manhattan) se achar que faz mais sentido para a sua implementação.
+Para medir a proximidade dos vetores, os exemplos deste documento usam **distância euclidiana** com *brute force* sobre as 14 dimensões. Note que você é livre pra escolher qualquer algoritmo/técnica de busca vetorial.
+
+> **Importante!** Não é permitido usar os payloads do teste como referência ou para fazer lookup de fraudes! Os testes finais vão usar outros payloads, e fazer isso nas prévias distroce o resultado e desanima outros participantes.
 
 
 ## Exemplo de transação fraudulenta
@@ -119,7 +121,7 @@ Para contrastar com o caso legítimo da visão geral, veja como fica uma transa�
 2. vetoriza e normaliza (14 dimensões — note os `-1` nos índices 5 e 6 por conta do `last_transaction: null`):
     [0.9506, 0.8333, 1.0, 0.2174, 0.8333, -1, -1, 0.9523, 1.0, 0, 1, 1, 0.75, 0.0055]
           ↓
-3. busca os 5 vizinhos mais próximos (distância euclidiana):
+3. busca os 5 vizinhos mais próximos:
     dist=0.2315  fraud
     dist=0.2384  fraud
     dist=0.2552  fraud

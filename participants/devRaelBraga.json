@@ -2,5 +2,9 @@
     {
         "id": "hisrael-xgboost-go",
         "repo": "https://github.com/devRaelBraga/rinha-2026-xgboost"
+    },
+    {
+        "id": "hisrael-xgboost-rust",
+        "repo": "https://github.com/devRaelBraga/rinha-2026-xgboost-rust"
     }
 ]

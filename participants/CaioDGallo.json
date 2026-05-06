@@ -2,5 +2,9 @@
     {
         "id": "sketchy-check",
         "repo": "https://github.com/CaioDGallo/sketchy-check"
+    },
+    {
+        "id": "sketchy-node",
+        "repo": "https://github.com/CaioDGallo/sketchy-node"
     }
 ]

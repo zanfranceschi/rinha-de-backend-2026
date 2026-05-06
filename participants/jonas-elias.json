@@ -2,5 +2,9 @@
     {
         "id": "jonaselias-php-rust",
         "repo": "https://github.com/jonas-elias/rinha-backend-2026-php-rust"
+    },
+    {
+        "id": "jonaselias-php",
+        "repo": "https://github.com/jonas-elias/rinha-backend-2026-php"
     }
 ]

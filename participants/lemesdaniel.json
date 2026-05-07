@@ -2,5 +2,9 @@
     {
         "id": "lemesdaniel-nim",
         "repo": "https://github.com/lemesdaniel/floating-finch"
+    },
+    {
+        "id": "lemesdaniel-zig",
+        "repo": "https://github.com/lemesdaniel/floating-finch-zig"
     }
 ]

@@ -1,0 +1,10 @@
+[
+    {
+        "id": "heindall-golpher",
+        "repo": "https://github.com/whoisclebs/heindall"
+    },
+    {
+        "id": "heindall-fasthttp",
+        "repo": "https://github.com/whoisclebs/heindall-fasthttp"
+    }
+]

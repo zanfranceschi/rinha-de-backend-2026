@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <time.h>
+#include <omp.h>
 #include "cjson/cJSON.h"
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -547,7 +548,7 @@ static double euclidean_dist(const double *a, const double *b) {
         double d = a[i] - b[i];
         sum += d * d;
     }
-    return sqrt(sum);
+    return sum;
 }
 
 static void knn_classify(const double *vec, const RefVec *refs, int nrefs,
@@ -653,6 +654,8 @@ static void usage(const char *prog) {
         "  --refs-in PATH       input path for references.json when --reuse-refs is set\n"
         "                       (default: resources/references.json)\n"
         "  --payloads-out PATH  output path for test-data.json (default: test/test-data.json)\n"
+        "  --refs-seed N        RNG seed for reference generation (default: 42)\n"
+        "  --payloads-seed N    RNG seed for payload generation (default: 4242)\n"
         "  --pretty-json        indent JSON output (default: compact)\n"
         "  --help               show this message\n",
         prog);
@@ -668,6 +671,8 @@ int main(int argc, char **argv) {
     const char *refs_in       = "resources/references.json";
     int reuse_refs            = 0;
     const char *payloads_out  = "test/test-data.json";
+    uint64_t refs_seed        = REF_SEED;
+    uint64_t payloads_seed    = PAY_SEED;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--refs") == 0 && i + 1 < argc)
@@ -690,6 +695,10 @@ int main(int argc, char **argv) {
             reuse_refs = 1;
         else if (strcmp(argv[i], "--payloads-out") == 0 && i + 1 < argc)
             payloads_out = argv[++i];
+        else if (strcmp(argv[i], "--refs-seed") == 0 && i + 1 < argc)
+            refs_seed = strtoull(argv[++i], NULL, 10);
+        else if (strcmp(argv[i], "--payloads-seed") == 0 && i + 1 < argc)
+            payloads_seed = strtoull(argv[++i], NULL, 10);
         else if (strcmp(argv[i], "--pretty-json") == 0)
             pretty_json = 1;
         else if (strcmp(argv[i], "--help") == 0) {
@@ -717,7 +726,7 @@ int main(int argc, char **argv) {
     } else {
         printf("Generating %d reference vectors...\n", ref_size);
         refs = malloc((size_t)ref_size * sizeof(RefVec));
-        rng_init(&rng, REF_SEED);
+        rng_init(&rng, refs_seed);
 
         for (int i = 0; i < ref_size; i++) {
             Profile p   = pick_profile(&rng, fraud_ratio_refs);
@@ -754,14 +763,19 @@ int main(int argc, char **argv) {
 
     /* --- Payloads de teste --- */
     printf("Generating %d test payloads...\n", payload_size);
-    rng_init(&rng, PAY_SEED);
+    rng_init(&rng, payloads_seed);
 
     TestEntry *entries = malloc((size_t)payload_size * sizeof(TestEntry));
+    /* Pass 1 (sequencial): consome RNG — determinismo bit-a-bit. */
     for (int i = 0; i < payload_size; i++) {
         Profile p = pick_profile(&rng, fraud_ratio_payloads);
         entries[i].req = gen_request(&rng, p, &mcc);
         normalize(&entries[i].req, &norm, &mcc, entries[i].vec);
         for (int j = 0; j < VDIM; j++) entries[i].vec[j] = round4(entries[i].vec[j]);
+    }
+    /* Pass 2 (paralelo): KNN é puro — cada i é independente. */
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < payload_size; i++) {
         knn_classify(entries[i].vec, refs, ref_size, &entries[i].approved, &entries[i].fraud_score);
         entries[i].fraud_score = round4(entries[i].fraud_score);
     }
@@ -790,14 +804,8 @@ int main(int argc, char **argv) {
     for (int i = 0; i < payload_size; i++) {
         cJSON *entry = cJSON_CreateObject();
         cJSON_AddItemToObject(entry, "request", request_to_json(&entries[i].req));
-
-        cJSON *info = cJSON_AddObjectToObject(entry, "info");
-        cJSON_AddItemToObject(info, "vector", jnum_array(entries[i].vec, VDIM));
-
-        cJSON *resp = cJSON_AddObjectToObject(info, "expected_response");
-        cJSON_AddBoolToObject(resp, "approved", entries[i].approved);
-        cJSON_AddItemToObject(resp, "fraud_score", jnum(entries[i].fraud_score));
-
+        cJSON_AddBoolToObject(entry, "expected_approved", entries[i].approved);
+        cJSON_AddItemToObject(entry, "expected_fraud_score", jnum(entries[i].fraud_score));
         cJSON_AddItemToArray(arr, entry);
     }
 

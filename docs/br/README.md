@@ -1,6 +1,6 @@
 # Rinha de Backend 2026 – Detecção de fraude por busca vetorial!
 
-> **Atenção!** Esta edição está em fase de validação: as regras ainda podem mudar e as datas ainda não foram definidas. De toda forma, qualquer pessoa já pode participar para se divertir, aprender e ajudar na melhoria dessa edição — basta desenvolver o seu backend e submetê-lo para testes de prévia.
+**Atenção!** Esta edição ainda não tem data de término definida!
 
 ## O desafio
 
@@ -62,7 +62,7 @@ As 14 dimensões, as fórmulas de normalização e as constantes estão em [REGR
 
 ## Arquivos de referência
 
-Você recebe três arquivos. Eles não mudam durante o teste, então você pode pré-processá-los no build ou no startup do container.
+Você recebe três arquivos. Eles não mudam durante o teste, então você pode (e deveria) pré-processá-los no build ou no startup do container.
 
 - `references.json.gz` — 3.000.000 vetores rotulados como `fraud` ou `legit`.
 - `mcc_risk.json` — risco por categoria de comerciante.
@@ -134,13 +134,12 @@ Aqui está uma sugestão de ordem para leitura da documentação da edição des
 ### 4. Participação e avaliação
 
 - **[SUBMISSAO.md](./SUBMISSAO.md)** — Passo-a-passo do PR, branches (`main` e `submission`), como abrir a issue `rinha/test`.
-- **[AVALIACAO.md](./AVALIACAO.md)** — Fórmula de pontuação, peso de FP/FN, multiplicador de latência, como rodar o teste local.
+- **[AVALIACAO.md](./AVALIACAO.md)** — Fórmula de pontuação, peso de falso positivo/falso negativo/erro, multiplicador de latência, como rodar o teste local.
 - **[FAQ.md](./FAQ.md)** — Dúvidas recorrentes, armadilhas comuns, o que pode e não pode.
 
 ---
 ## Pontos em aberto
 - Definição de datas de encerramento para submissões e resultados finais
-- Mecanismo para agregar a prévia dos resultados
 
 ---
 

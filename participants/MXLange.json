@@ -6,5 +6,9 @@
     {
         "id": "MXLange-rust-1",
         "repo": "https://github.com/MXLange/rinha-de-backend-2026-rust"
+    },
+    {
+        "id": "MXLange-go-ivf",
+        "repo": "https://github.com/MXLange/rinha-de-backend-2026-go-ivf"
     }
 ]

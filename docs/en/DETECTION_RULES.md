@@ -1,13 +1,13 @@
 # Fraud detection rules
 
-This document defines how your API should turn a transaction into a fraud detection vector. It covers the vectorization (the 14 dimensions) and the normalization rules. The vector search uses that vector to find, in the reference dataset, the transactions most similar to the one that just arrived, and from there decide whether the new transaction is fraudulent.
+This document defines how your API should turn a transaction into a fraud detection vector. It covers the vectorization (the 14 dimensions) and the normalization rules. The vector search uses that vector to find, in the reference dataset, the 5 transactions most similar to the one that just arrived, and from there decide whether the new transaction is fraudulent.
 
 If you are not yet familiar with the concept of vector search, it is worth starting with [VECTOR_SEARCH.md](./VECTOR_SEARCH.md) — there the topic is introduced in a didactic way, with a very simplified example.
 
 
 ## Flow overview
 
-The flow below shows, with a real example of a legitimate transaction, the step by step your API should follow to decide on a transaction. In this case, a customer makes a low-value purchase at a merchant they already know, close to home.
+The flow below shows, with a real Rinha de Backend example of a legitimate transaction, the step by step your API should follow to decide on a transaction. In this case, a customer makes a low-value purchase at a merchant they already know, close to home.
 
 ```
 1. receives the request:
@@ -23,7 +23,7 @@ The flow below shows, with a real example of a legitimate transaction, the step 
 2. vectorizes and normalizes (14 dimensions):
     [0.0041, 0.1667, 0.05, 0.7826, 0.3333, -1, -1, 0.0292, 0.15, 0, 1, 0, 0.15, 0.006]
           ↓
-3. searches for the 5 nearest neighbors (Euclidean distance):
+3. searches for the 5 nearest neighbors (e.g., Euclidean distance):
     dist=0.0340  legit
     dist=0.0488  legit
     dist=0.0509  legit
@@ -98,7 +98,7 @@ Once the vector is ready, your API should:
 2. Compute `fraud_score` as the fraction of frauds among those 5 references — that is, `number_of_frauds / 5`.
 3. Respond with `approved = fraud_score < 0.6`. The threshold of `0.6` is fixed.
 
-To measure "proximity" between two vectors, the examples in this document use **Euclidean distance** over the 14 dimensions. That is the reference metric, but you can use other distance metrics (such as cosine or Manhattan) if you find that it makes more sense for your implementation.
+To measure vector proximity, the examples in this document use **Euclidean distance** with *brute force* over the 14 dimensions. Note that you are free to choose any vector search algorithm/technique.
 
 > **Important!** Using the test payloads as a reference or for fraud lookup is not allowed! The final tests will use different payloads, and doing this in the previews distorts the results and discourages other participants.
 
@@ -121,7 +121,7 @@ To contrast with the legitimate case in the overview, see how a fraudulent trans
 2. vectorizes and normalizes (14 dimensions — note the `-1` at indices 5 and 6 due to `last_transaction: null`):
     [0.9506, 0.8333, 1.0, 0.2174, 0.8333, -1, -1, 0.9523, 1.0, 0, 1, 1, 0.75, 0.0055]
           ↓
-3. searches for the 5 nearest neighbors (Euclidean distance):
+3. searches for the 5 nearest neighbors:
     dist=0.2315  fraud
     dist=0.2384  fraud
     dist=0.2552  fraud

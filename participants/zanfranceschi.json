@@ -2,9 +2,5 @@
     {
         "id": "dotnet",
         "repo": "https://github.com/zanfranceschi/rinha-de-backend-2026-zan-dotnet"
-    },
-    {
-        "id": "clojure",
-        "repo": "https://github.com/zanfranceschi/rinha-de-backend-2026-zan-clojure"
     }
 ]

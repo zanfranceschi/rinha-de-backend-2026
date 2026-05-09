@@ -1,4 +1,8 @@
 [{
     "id": "ogrodev-bun-c-simd",
     "repo": "https://github.com/ogrodev/rinha-de-backend-2026"
+},
+{
+    "id": "ogrodev-rdb-ultra",
+    "repo": "https://github.com/ogrodev/rdb-ultra"
 }]

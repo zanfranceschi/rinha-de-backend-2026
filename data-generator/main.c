@@ -294,7 +294,7 @@ static RefVec *load_refs(const char *path, int *out_n) {
         exit(1);
     }
     int n = cJSON_GetArraySize(j);
-    RefVec *refs = malloc((size_t)n * sizeof(RefVec));
+    RefVec *refs = calloc(n, sizeof(RefVec));
     int i = 0;
     cJSON *item = NULL;
     cJSON_ArrayForEach(item, j) {
@@ -310,8 +310,7 @@ static RefVec *load_refs(const char *path, int *out_n) {
         }
         for (int k = 0; k < VDIM; k++)
             refs[i].v[k] = cJSON_GetArrayItem(vec, k)->valuedouble;
-        strncpy(refs[i].label, label->valuestring, 7);
-        refs[i].label[7] = '\0';
+        snprintf(refs[i].label, sizeof(refs[i].label), "%.7s", label->valuestring);
         i++;
     }
     cJSON_Delete(j);
@@ -328,8 +327,7 @@ static MCCMap load_mcc(const char *path) {
     cJSON *item = NULL;
     cJSON_ArrayForEach(item, j) {
         if (m.n >= MAX_MCC) break;
-        strncpy(m.e[m.n].code, item->string, 7);
-        m.e[m.n].code[7] = '\0';
+        snprintf(m.e[m.n].code, sizeof(m.e[m.n].code), "%.7s", item->string);
         m.e[m.n].risk = item->valuedouble;
         m.n++;
     }
@@ -357,9 +355,9 @@ static time_t ts_epoch(const char *ts) {
 
 static void epoch_to_ts(time_t ep, char *buf) {
     struct tm *t = gmtime(&ep);
-    sprintf(buf, "%04d-%02d-%02dT%02d:%02d:%02dZ",
-            t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
-            t->tm_hour, t->tm_min, t->tm_sec);
+    snprintf(buf, TS_LEN, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+             t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+             t->tm_hour, t->tm_min, t->tm_sec);
 }
 
 /* Day of week: Monday=0, Sunday=6 (Tomohiko Sakamoto) */
@@ -393,7 +391,7 @@ static const char *FRAUD_MCCS[] = {"7995", "7801", "7802"};
 static Request gen_request(Rng *r, Profile p, const MCCMap *mcc_map) {
     Request req = {0};
 
-    sprintf(req.id, "tx-%u", pcg32(r));
+    snprintf(req.id, sizeof(req.id), "tx-%u", pcg32(r));
 
     switch (p) {
         case LEGIT:      req.amount = rng_range(r, 10, 500); break;
@@ -418,7 +416,7 @@ static Request gen_request(Rng *r, Profile p, const MCCMap *mcc_map) {
     int hour = rng_int(r, h_lo, h_hi);
     int mn   = rng_int(r, 0, 60);
     int sec  = rng_int(r, 0, 60);
-    sprintf(req.requested_at, "2026-03-%02dT%02d:%02d:%02dZ", day, hour, mn, sec);
+    snprintf(req.requested_at, sizeof(req.requested_at), "2026-03-%02dT%02d:%02d:%02dZ", day, hour, mn, sec);
 
     switch (p) {
         case LEGIT:      req.cust_avg = rng_range(r, req.amount / 0.5, req.amount * 2.0); break;
@@ -435,27 +433,27 @@ static Request gen_request(Rng *r, Profile p, const MCCMap *mcc_map) {
 
     req.known_n = rng_int(r, 2, 6);
     for (int i = 0; i < req.known_n; i++)
-        sprintf(req.known[i], "MERC-%03d", rng_int(r, 1, 20));
+        snprintf(req.known[i], sizeof(req.known[i]), "MERC-%03d", rng_int(r, 1, 20));
 
     switch (p) {
         case LEGIT:
-            strcpy(req.merch_id, req.known[rng_int(r, 0, req.known_n)]);
+            snprintf(req.merch_id, sizeof(req.merch_id), "%s", req.known[rng_int(r, 0, req.known_n)]);
             break;
         case FRAUD:
-            sprintf(req.merch_id, "MERC-%03d", rng_int(r, 50, 100));
+            snprintf(req.merch_id, sizeof(req.merch_id), "MERC-%03d", rng_int(r, 50, 100));
             break;
         case BORDERLINE:
             if (rng_f64(r) < 0.5)
-                strcpy(req.merch_id, req.known[rng_int(r, 0, req.known_n)]);
+                snprintf(req.merch_id, sizeof(req.merch_id), "%s", req.known[rng_int(r, 0, req.known_n)]);
             else
-                sprintf(req.merch_id, "MERC-%03d", rng_int(r, 30, 60));
+                snprintf(req.merch_id, sizeof(req.merch_id), "MERC-%03d", rng_int(r, 30, 60));
             break;
     }
 
     switch (p) {
-        case LEGIT:      strcpy(req.mcc, LEGIT_MCCS[rng_int(r, 0, 4)]); break;
-        case FRAUD:      strcpy(req.mcc, FRAUD_MCCS[rng_int(r, 0, 3)]); break;
-        case BORDERLINE: strcpy(req.mcc, mcc_map->e[rng_int(r, 0, mcc_map->n)].code); break;
+        case LEGIT:      snprintf(req.mcc, sizeof(req.mcc), "%s", LEGIT_MCCS[rng_int(r, 0, 4)]); break;
+        case FRAUD:      snprintf(req.mcc, sizeof(req.mcc), "%s", FRAUD_MCCS[rng_int(r, 0, 3)]); break;
+        case BORDERLINE: snprintf(req.mcc, sizeof(req.mcc), "%s", mcc_map->e[rng_int(r, 0, mcc_map->n)].code); break;
     }
 
     switch (p) {
@@ -725,7 +723,7 @@ int main(int argc, char **argv) {
         printf("  -> loaded %d vectors\n", ref_size);
     } else {
         printf("Generating %d reference vectors...\n", ref_size);
-        refs = malloc((size_t)ref_size * sizeof(RefVec));
+        refs = calloc(ref_size, sizeof(RefVec));
         rng_init(&rng, refs_seed);
 
         for (int i = 0; i < ref_size; i++) {
@@ -735,9 +733,9 @@ int main(int argc, char **argv) {
             for (int j = 0; j < VDIM; j++) refs[i].v[j] = round4(refs[i].v[j]);
 
             if (p == BORDERLINE)
-                strcpy(refs[i].label, rng_f64(&rng) < 0.5 ? "fraud" : "legit");
+                snprintf(refs[i].label, sizeof(refs[i].label), "%s", rng_f64(&rng) < 0.5 ? "fraud" : "legit");
             else
-                strcpy(refs[i].label, p == FRAUD ? "fraud" : "legit");
+                snprintf(refs[i].label, sizeof(refs[i].label), "%s", p == FRAUD ? "fraud" : "legit");
         }
 
         cJSON *refs_json = cJSON_CreateArray();
@@ -765,7 +763,7 @@ int main(int argc, char **argv) {
     printf("Generating %d test payloads...\n", payload_size);
     rng_init(&rng, payloads_seed);
 
-    TestEntry *entries = malloc((size_t)payload_size * sizeof(TestEntry));
+    TestEntry *entries = calloc(payload_size, sizeof(TestEntry));
     /* Pass 1 (sequencial): consome RNG — determinismo bit-a-bit. */
     for (int i = 0; i < payload_size; i++) {
         Profile p = pick_profile(&rng, fraud_ratio_payloads);

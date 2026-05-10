@@ -6,5 +6,9 @@
     {
         "id": "cleissonbarbosa-ispc",
         "repo": "https://github.com/cleissonbarbosa/rinha-backend-2026-ispc"
+    },
+    {
+        "id": "cleissonbarbosa-rust",
+        "repo": "https://github.com/cleissonbarbosa/rinha-backend-2026-rust"
     }
 ]

@@ -6,5 +6,9 @@
     {
         "id": "steixeira93-go-hnsw",
         "repo": "https://github.com/steixeira93/rinha-backend-26"
+    },
+    {
+        "id": "steixeira93-bun-rust",
+        "repo": "https://github.com/steixeira93/rinha-backend-26-bun"
     }
 ]

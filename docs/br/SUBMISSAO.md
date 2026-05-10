@@ -2,6 +2,12 @@
 
 Este documento descreve como submeter o seu backend para a Rinha de Backend 2026.
 
+## Importante!
+
+- Para participar da rinha, todos os seus repositórios precisam estar soba licença MIT.
+- Não é permitido usar os payloads do teste como lookup.
+- Se avacalhar o evento, será removido/a sem aviso prévio. 
+
 ## Inscrição
 
 Para que o seu backend seja oficialmente testado, você deve abrir um [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) adicionando um arquivo JSON no diretório [./participants](./participants) com informações sobre a sua participação.

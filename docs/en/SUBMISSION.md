@@ -2,6 +2,12 @@
 
 This page describes how you can take part in Rinha de Backend 2026.
 
+## Important!
+
+- To participate in Rinha, all your repositories must be under the MIT license.
+- Using the test payloads as a lookup is not allowed.
+- If you disrupt the event, you will be removed without prior notice.
+
 ## Registration
 
 To register your backend for official testing, you need to open a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) that adds a file with your participation details. An example:

@@ -1,6 +1,10 @@
-[
-    {
-        "id": "bulletdev-ruby",
-        "repo": "https://github.com/bulletdev/bulletonrails-ruby"
-    }
-]
+[                                                                                                                                                     
+      {                                                           
+          "id": "bulletdev-ruby",
+          "repo": "https://github.com/bulletdev/bulletonrails-ruby"
+      },                                                                                                                                                
+      {
+          "id": "bulletdev-zig",                                                                                                                        
+          "repo": "https://github.com/bulletdev/bulletonrails-zig"
+      }                                                                                                                                                 
+  ]

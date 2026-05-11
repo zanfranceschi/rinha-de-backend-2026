@@ -1,6 +1,10 @@
 [
   {
-    "id": "mpraes-python-faiss",
+    "id": "mpraes-python2",
     "repo": "https://github.com/mpraes/rinha-2026-python2"
+  },
+  {
+    "id": "mpraes-python1",
+    "repo": "https://github.com/mpraes/rinha-2026-python1"
   }
 ]

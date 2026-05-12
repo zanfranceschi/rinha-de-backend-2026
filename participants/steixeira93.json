@@ -10,5 +10,9 @@
     {
         "id": "steixeira93-bun-rust",
         "repo": "https://github.com/steixeira93/rinha-backend-26-bun"
+    },
+    {
+        "id": "steixeira93-c-fd-handoff",
+        "repo": "https://github.com/steixeira93/rinha-backend-26-c"
     }
 ]

@@ -1,0 +1,7 @@
+{
+  "participants": ["Fabio Favaretto"],
+  "social": ["https://github.com/andorinha-master"],
+  "source-code-repo": "https://github.com/andorinha-master/rinha-de-backend-2026-c",
+  "stack": ["c", "epoll", "unix-socket", "avx2", "fma", "ivf", "int16", "custom-lb"],
+  "open_to_work": true
+}

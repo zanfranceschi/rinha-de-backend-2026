@@ -1,6 +1,6 @@
 services:
   api1: &api
-    image: ghcr.io/andorinha-master/rinha-de-backend-2026-c:submission
+    image: ghcr.io/andorinha-master/rinha-de-backend-2026:submission
     platform: linux/amd64
     command: ["/app/rinha-api"]
     environment:
@@ -27,7 +27,7 @@ services:
       IVF_BBOX_REPAIR: "true"
 
   lb:
-    image: ghcr.io/andorinha-master/rinha-de-backend-2026-c:submission
+    image: ghcr.io/andorinha-master/rinha-de-backend-2026:submission
     platform: linux/amd64
     command: ["/app/rinha-lb"]
     depends_on:

@@ -1,6 +1,0 @@
-.claude
-data-generator/generate
-resources/references.json
-.env
-test/results.json
-temporary-results

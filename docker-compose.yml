@@ -1,0 +1,56 @@
+services:
+  api1: &api
+    image: ghcr.io/andorinha-master/rinha-de-backend-2026:submission
+    platform: linux/amd64
+    command: ["/app/rinha-api"]
+    environment:
+      UNIX_SOCKET_PATH: /sockets/api1.sock
+      IVF_FAST_NPROBE: "1"
+      IVF_FULL_NPROBE: "1"
+      IVF_BBOX_REPAIR: "true"
+    networks:
+      - backend
+    volumes:
+      - sockets:/sockets
+    deploy:
+      resources:
+        limits:
+          cpus: "0.42"
+          memory: "160MB"
+
+  api2:
+    <<: *api
+    environment:
+      UNIX_SOCKET_PATH: /sockets/api2.sock
+      IVF_FAST_NPROBE: "1"
+      IVF_FULL_NPROBE: "1"
+      IVF_BBOX_REPAIR: "true"
+
+  lb:
+    image: ghcr.io/andorinha-master/rinha-de-backend-2026:submission
+    platform: linux/amd64
+    command: ["/app/rinha-lb"]
+    depends_on:
+      - api1
+      - api2
+    environment:
+      PORT: "9999"
+      UPSTREAMS: /sockets/api1.sock,/sockets/api2.sock
+    ports:
+      - "9999:9999"
+    networks:
+      - backend
+    volumes:
+      - sockets:/sockets
+    deploy:
+      resources:
+        limits:
+          cpus: "0.16"
+          memory: "30MB"
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  sockets:

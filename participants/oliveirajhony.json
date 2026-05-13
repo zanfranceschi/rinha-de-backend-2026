@@ -2,5 +2,9 @@
   {
     "id": "oliveirajhony-rust",
     "repo": "https://github.com/oliveirajhony/rinhabackend-2026-rust"
+  },
+  {
+    "id": "oliveirajhony-zig",
+    "repo": "https://github.com/oliveirajhony/rinhabackend-2026-zig"
   }
 ]

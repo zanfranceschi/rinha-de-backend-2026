@@ -7,7 +7,7 @@
     "submission_health_check_interval_ms": 3000,
     "api_issues_url": "https://api.github.com/repos/zanfranceschi/rinha-de-backend-2026/issues",
     "poll_interval_ms": 5000,
-    "max_preview_submissions_per_day": 3,
+    "max_preview_submissions_per_day": 5,
     "max_cpu": 1.0,
     "max_memory_mb": "350"
 }

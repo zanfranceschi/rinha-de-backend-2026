@@ -7,6 +7,7 @@ This page describes how you can take part in Rinha de Backend 2026.
 - To participate in Rinha, all your repositories must be under the MIT license.
 - Using the test payloads as a lookup is not allowed.
 - If you disrupt the event, you will be removed without prior notice.
+- Of course you can use AI, but not to copy other people's submissions, flood the test queue, etc. Any kind of unsportsmanlike conduct will get you removed.
 
 ## Registration
 

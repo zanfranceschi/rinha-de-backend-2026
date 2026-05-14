@@ -1,0 +1,26 @@
+services:
+  k6:
+    image: grafana/k6:latest
+    user: root
+    environment:
+      - K6_NO_USAGE_REPORT=true
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: run /app/test/test.js
+    network_mode: "host"
+    profiles:
+      - test
+
+  k6-smoke:
+    image: grafana/k6:latest
+    user: root
+    environment:
+      - K6_NO_USAGE_REPORT=true
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: run /app/test/smoke.js
+    network_mode: "host"
+    profiles:
+      - smoke

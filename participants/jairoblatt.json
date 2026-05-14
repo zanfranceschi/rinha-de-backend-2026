@@ -2,5 +2,13 @@
   {
     "id": "jrblatt-html",
     "repo": "https://github.com/jairoblatt/rinha-2026-html"
+  }, 
+  {                                                    
+    "id": "jairoblatt-rust",                                                                                                                                                           
+    "repo": "https://github.com/jairoblatt/rinha-2026-rust"
+  }, 
+  {                                                    
+    "id": "jairoblatt-node",                                                                                                                                                           
+    "repo": "https://github.com/jairoblatt/rinha-2026-node"
   }
 ]

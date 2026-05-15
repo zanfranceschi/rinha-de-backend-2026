@@ -1,50 +1,63 @@
-# Rinha de Backend 2026 – Fraud Detection
+# Local Docker Setup
 
-![cover](/misc/cover.png)
+This repository includes a minimal production-like local stack:
 
-[Português](#português) · [English](#english)
+- 2 API containers (`api-1` and `api-2`)
+- 1 Nginx load balancer exposed on host port `9999`
+- Round-robin balancing across both API instances
+- Healthchecks on API containers and Nginx startup gated until both APIs are healthy
 
-### Official Ranking Preview @ [rinhadebackend.com.br](https://rinhadebackend.com.br/)
+## Requirements
 
----
+- Docker Engine + Docker Compose plugin
+- Node.js 20+ (for local non-container test execution)
+- Local Docker limits are set to share a total cap of 1 CPU and 350MB RAM across all services.
 
-## Português
+## Run
 
-A **Rinha de Backend** é uma competição amistosa em que você constrói um backend sob restrições de CPU, memória, e arquitetura. Cada edição traz um tema diferente – e o desta vez é **detecção de fraudes usando busca vetorial**.
+```bash
+docker compose up --build
+```
 
-**Documentação completa do desafio:** [**docs/br/README.md**](./docs/br/README.md)
+The API will be available at:
 
-### Edições anteriores
+- `http://localhost:9999/ready`
 
-- [**2025** — Payment Processor](https://github.com/zanfranceschi/rinha-de-backend-2025)
-- [**2024** — Crébitos (controle de concorrência)](https://github.com/zanfranceschi/rinha-de-backend-2024-q1)
-- [**2023** — CRUD de Pessoas](https://github.com/zanfranceschi/rinha-de-backend-2023-q3)
+## Resource limits (shared cap)
 
-### Redes sociais
-- [Website Oficial](https://rinhadebackend.com.br/)
-- [Discord](https://discord.gg/Eca6gJba8R)
-- [X / Twitter](https://x.com/rinhadebackend)
-- [LinkedIn](https://www.linkedin.com/company/108194083)
-- [Bluesky](https://bsky.app/profile/rinhadebackend.bsky.social)
+Docker Compose does not support a single global CPU or memory limit across multiple services. To stay within the shared target, per-service limits are set so the totals sum to 1 CPU and 350MB RAM:
 
----
+- api-1: 0.4 CPU, 150MB RAM
+- api-2: 0.4 CPU, 150MB RAM
+- nginx: 0.2 CPU, 50MB RAM
 
-## English
+This is the closest safe behavior for local Compose. If you change service counts or container needs, adjust the per-service limits so the totals stay within the shared cap.
 
-**Rinha de Backend** is a friendly competition where you build a backend under CPU, memory, and architecture constraints. Each edition has a different theme – this one is **fraud detection using vector search**.
+## Validate balancing
 
-**Full challenge documentation:** [**docs/en/README.md**](./docs/en/README.md)
+Run multiple requests and check the `instance` field is distributed between `api-1` and `api-2` over time.
 
-### Previous editions
+```bash
+for i in $(seq 1 6); do curl -s http://localhost:9999/ready; echo; done
+```
 
-- [**2025** — Payment Processor](https://github.com/zanfranceschi/rinha-de-backend-2025)
-- [**2024** — Crébitos (concurrency control)](https://github.com/zanfranceschi/rinha-de-backend-2024-q1)
-- [**2023** — People CRUD](https://github.com/zanfranceschi/rinha-de-backend-2023-q3)
+Expected shape:
 
-### Social media
+```json
+{"status":"ok","instance":"api-1"}
+{"status":"ok","instance":"api-2"}
+```
 
-- [Official Website](https://rinhadebackend.com.br/)
-- [Discord](https://discord.gg/Eca6gJba8R)
-- [X / Twitter](https://x.com/rinhadebackend)
-- [LinkedIn](https://www.linkedin.com/company/108194083)
-- [Bluesky](https://bsky.app/profile/rinhadebackend.bsky.social)
+Note: round-robin in Nginx distributes requests across upstreams, but strict one-by-one alternation is not guaranteed in every run.
+
+## Local test
+
+```bash
+npm test
+```
+
+## Compose syntax validation
+
+```bash
+docker compose config
+```

@@ -1,0 +1,62 @@
+services:
+  api-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3000
+      INSTANCE_ID: api-1
+    expose:
+      - "3000"
+    cpus: "0.4"
+    mem_limit: "150m"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/ready', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  api-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3000
+      INSTANCE_ID: api-2
+    expose:
+      - "3000"
+    cpus: "0.4"
+    mem_limit: "150m"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/ready', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      api-1:
+        condition: service_healthy
+      api-2:
+        condition: service_healthy
+    ports:
+      - "9999:80"
+    cpus: "0.2"
+    mem_limit: "50m"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro

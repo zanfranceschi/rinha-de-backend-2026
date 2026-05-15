@@ -1,9 +1,5 @@
 [
   {
-    "id": "fksegundo-dotnetrust",
-    "repo": "https://github.com/fksegundo/rinha-dotnetrust"
-  },
-  {
     "id": "fksegundo-rust",
     "repo": "https://github.com/fksegundo/rinha-rust"
   }

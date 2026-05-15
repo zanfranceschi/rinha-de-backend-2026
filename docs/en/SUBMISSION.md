@@ -7,6 +7,7 @@ This page describes how you can take part in Rinha de Backend 2026.
 - To participate in Rinha, all your repositories must be under the MIT license.
 - Using the test payloads as a lookup is not allowed.
 - If you disrupt the event, you will be removed without prior notice.
+- Of course you can use AI, but not to copy other people's submissions, flood the test queue, etc. Any kind of unsportsmanlike conduct will get you removed.
 
 ## Registration
 
@@ -87,7 +88,8 @@ There are two testing moments in Rinha:
 
 - **Preview tests** — you can submit your backend to as many preview tests as you want – they serve as a practice run for the final test. Just open an issue [like this one](https://github.com/zanfranceschi/rinha-de-backend-2026/issues/49) with `rinha/test [optional id of your submission]` in the issue description. The Rinha Engine scans all open issues with that description, runs a preview test, posts the results (or any error) together with your score as a comment, and closes the issue. Take full advantage of preview tests to make small adjustments, try different configurations, and so on.
 
-- **Final test** — runs a single time, at the end of Rinha, and it is what defines the official score of each participant. It uses a different script from the preview script — likely heavier, capable of demanding more from your backend (more volume, more load, different scenarios). The date of the final test is not defined yet.
+- **Final test** — runs a single time, at the end of Rinha, and it is what defines the official score of each participant. It uses a different script from the preview script — likely heavier, capable of demanding more from your backend (more volume, more load, different scenarios). The final deadline for you to send your submission is **2026-06-05T23:59:59.999-03:00**! The final result will be released in the week of June 8th!
+
 
 ### Test environment
 

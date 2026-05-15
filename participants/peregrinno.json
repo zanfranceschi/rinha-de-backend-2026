@@ -1,6 +1,7 @@
 [
     {
       "id": "heimdall-go",
-      "repo": "https://github.com/peregrinno/heimdall"
+      "repo": "https://github.com/peregrinno/heimdall",
+      "version": "v4"
     }
   ]

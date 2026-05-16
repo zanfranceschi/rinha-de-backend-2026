@@ -1,6 +1,10 @@
 [
-    {
-        "id": "renatovico-elixir",
-        "repo": "https://github.com/renatovico/rinha_elixir"
-    }
+  {
+    "id": "renatovico-elixir",
+    "repo": "https://github.com/renatovico/rinha_elixir"
+  },
+  {
+    "id": "renatovico-elixir-pure",
+    "repo": "https://github.com/renatovico/rinha-elixir-pure"
+  }
 ]

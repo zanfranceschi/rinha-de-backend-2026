@@ -2,5 +2,9 @@
   {
     "id": "jonathanperis-dotnet",
     "repo": "https://github.com/jonathanperis/rinha4-back-end-dotnet"
+  },
+  {
+    "id": "jonathanperis-c",
+    "repo": "https://github.com/jonathanperis/rinha4-back-end-c"
   }
 ]

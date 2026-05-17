@@ -11,6 +11,13 @@ services:
     network_mode: "host"
     profiles:
       - test
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 8G
+    storage_opt:
+      size: "1T"
 
   k6-smoke:
     image: grafana/k6:latest
@@ -24,3 +31,10 @@ services:
     network_mode: "host"
     profiles:
       - smoke
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 8G
+    storage_opt:
+      size: "1T"

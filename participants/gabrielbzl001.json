@@ -1,0 +1,9 @@
+{
+  "participants": ["Gabriel Braga Zamproni Lima"],
+  "social": [
+    "https://github.com/gabrielbzl001",
+  ],
+  "source-code-repo": "https://github.com/gabrielbzl001/fraud-detector-rinha-quarkus",
+  "stack": ["java", "quarkus", "graalvm-native", "qdrant", "nginx"],
+  "open_to_work": true
+}

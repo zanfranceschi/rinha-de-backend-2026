@@ -2,5 +2,9 @@
     {
         "id": "go-api-rinha2026",
         "repo": "https://github.com/MXLange/go-api-rinha2026"
+    },
+    {
+        "id": "c-api-rinha2026",
+        "repo": "https://github.com/MXLange/c-api-rinha2026"
     }
 ]

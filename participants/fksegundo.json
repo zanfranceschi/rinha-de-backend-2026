@@ -2,5 +2,9 @@
   {
     "id": "fksegundo-rust",
     "repo": "https://github.com/fksegundo/rinha-rust"
+  },
+  {
+    "id": "fksegundo-dotnet",
+    "repo": "https://github.com/fksegundo/rinha-dotnet"
   }
 ]

@@ -3,11 +3,19 @@ use crate::{PACKED_DIMENSIONS, squared_distance_f32_scalar, squared_distance_i8_
 pub type CandidateDistanceFn = fn(&[i8; PACKED_DIMENSIONS], &[u8]) -> u32;
 pub type CentroidDistanceFn = fn(&[f32; PACKED_DIMENSIONS], &[f32; PACKED_DIMENSIONS]) -> f32;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum KernelMode {
+    Scalar,
+    Avx2,
+}
+
 #[derive(Clone, Copy)]
 pub struct DistanceKernels {
     pub candidate_distance: CandidateDistanceFn,
     pub centroid_distance: CentroidDistanceFn,
     pub avx2_enabled: bool,
+    pub candidate_mode: KernelMode,
+    pub centroid_mode: KernelMode,
 }
 
 pub fn select_distance_kernels() -> DistanceKernels {
@@ -18,6 +26,8 @@ pub fn select_distance_kernels() -> DistanceKernels {
                 candidate_distance: candidate_distance_avx2_entry,
                 centroid_distance: centroid_distance_avx2_entry,
                 avx2_enabled: true,
+                candidate_mode: KernelMode::Avx2,
+                centroid_mode: KernelMode::Avx2,
             };
         }
     }
@@ -26,6 +36,27 @@ pub fn select_distance_kernels() -> DistanceKernels {
         candidate_distance: squared_distance_i8_scalar,
         centroid_distance: squared_distance_f32_scalar,
         avx2_enabled: false,
+        candidate_mode: KernelMode::Scalar,
+        centroid_mode: KernelMode::Scalar,
+    }
+}
+
+pub fn target_arch() -> &'static str {
+    #[cfg(target_arch = "x86_64")]
+    {
+        "x86_64"
+    }
+    #[cfg(target_arch = "aarch64")]
+    {
+        "aarch64"
+    }
+    #[cfg(target_arch = "arm")]
+    {
+        "arm"
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64", target_arch = "arm")))]
+    {
+        "other"
     }
 }
 

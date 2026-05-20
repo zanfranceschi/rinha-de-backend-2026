@@ -1,0 +1,26 @@
+services:
+  simd-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: simd-test
+      args:
+        ARTIFACT_INPUT: resources/example-references.json
+        ARTIFACT_CLUSTERS: 4
+        ARTIFACT_PROBES: 2
+    platform: linux/amd64
+
+  simd-runtime:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        ARTIFACT_INPUT: resources/example-references.json
+        ARTIFACT_CLUSTERS: 4
+        ARTIFACT_PROBES: 2
+    platform: linux/amd64
+    environment:
+      PROBE_COUNT: "2"
+    ports:
+      - "9999:9999"

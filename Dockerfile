@@ -1,14 +1,27 @@
 FROM --platform=linux/amd64 rust:1.95-slim AS builder
 WORKDIR /app
 
-COPY Cargo.toml ./
+ARG ARTIFACT_INPUT=resources/references.json.gz
+ARG ARTIFACT_CLUSTERS=2048
+ARG ARTIFACT_PROBES=12
+
+COPY Cargo.toml Cargo.lock ./
 COPY src ./src
+COPY tests ./tests
 COPY resources ./resources
 
 RUN cargo build --release --bin build_artifacts --bin server
-RUN ./target/release/build_artifacts --input resources/references.json.gz --output /artifacts --clusters 2048 --probes 12
+RUN ./target/release/build_artifacts \
+    --input ${ARTIFACT_INPUT} \
+    --output /artifacts \
+    --clusters ${ARTIFACT_CLUSTERS} \
+    --probes ${ARTIFACT_PROBES}
 
-FROM --platform=linux/amd64 debian:bookworm-slim
+FROM builder AS simd-test
+ENV SIMD_REQUIRE_AVX2=1
+CMD ["cargo", "test", "--test", "simd_runtime", "--", "--nocapture"]
+
+FROM --platform=linux/amd64 debian:bookworm-slim AS runtime
 WORKDIR /app
 
 RUN useradd -r -u 10001 appuser

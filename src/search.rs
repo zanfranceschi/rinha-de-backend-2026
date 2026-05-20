@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ARTIFACT_VERSION, DIMENSIONS, FraudResponse, PACKED_DIMENSIONS, TOP_K, dequantize_component,
-    pad_centroid, quantize_vector_padded, score_neighbors, simd::DistanceKernels,
+    pad_centroid, quantize_vector_padded, score_neighbors, simd::DistanceKernels, simd::KernelMode,
     simd::select_distance_kernels,
 };
 
@@ -156,6 +156,14 @@ impl SearchEngine {
 
     pub fn avx2_enabled(&self) -> bool {
         self.kernels.avx2_enabled
+    }
+
+    pub fn candidate_kernel_mode(&self) -> KernelMode {
+        self.kernels.candidate_mode
+    }
+
+    pub fn centroid_kernel_mode(&self) -> KernelMode {
+        self.kernels.centroid_mode
     }
 
     fn scan_cluster(

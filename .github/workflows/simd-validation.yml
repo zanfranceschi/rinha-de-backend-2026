@@ -1,0 +1,39 @@
+name: SIMD Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "Dockerfile"
+      - "docker-compose.simd.yml"
+      - "scripts/validate-simd-container.sh"
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/simd-validation.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "Dockerfile"
+      - "docker-compose.simd.yml"
+      - "scripts/validate-simd-container.sh"
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/simd-validation.yml"
+
+jobs:
+  simd-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate SIMD in amd64 containers
+        env:
+          SIMD_REQUIRE_AVX2: "1"
+          SIMD_EXPECT_AVX2: "1"
+        run: bash scripts/validate-simd-container.sh

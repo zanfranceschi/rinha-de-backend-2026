@@ -8,6 +8,11 @@ O teste de carga usa o [k6](https://k6.io/) num cenário incremental simples de 
 
 Para rodar o teste, siga as [instruções oficiais do k6](https://grafana.com/docs/k6/latest/).
 
+O projeto também disponibiliza um docker-compose.yml no diretório `test` para facilitar a execução local dos cenários de teste:
+
+- `docker compose --profile test up`: executa toda a suíte de testes;
+- `docker compose --profile smoke up`: executa testes rápidos para validação básica da aplicação.
+
 As instruções para que o seu backend seja testado de fato estão [descritas aqui](/docs/br/SUBMISSAO.md) na seção **Execução do Teste**.
 
 ## O que é testado

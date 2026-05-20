@@ -13,7 +13,7 @@ set -euo pipefail
 
 time ./data-generator/generate \
     --reuse-refs \
-    --payloads-seed 4242 \
+    --payloads-seed 4141 \
     --payloads 54100 \
     --payloads-out test/test-data.json \
     --fraud-ratio-payloads 0.47 \

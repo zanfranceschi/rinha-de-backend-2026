@@ -3,10 +3,10 @@ set -euo pipefail
 
 TEST_FILE="test/test.js"
 
-start_rate=$(grep -oP 'startRate:\s*\K\d+' "$TEST_FILE")
+start_rate=$(perl -ne 'print "$1\n" if /startRate:\s*(\d+)/' "$TEST_FILE")
 
-durations=($(grep -oP "duration:\s*'\K[0-9]+" "$TEST_FILE"))
-targets=($(grep -oP "target:\s*\K\d+" "$TEST_FILE"))
+durations=($(perl -ne "print \"\$1\\n\" if /duration:\s*'(\d+)/" "$TEST_FILE"))
+targets=($(perl -ne 'print "$1\n" if /target:\s*(\d+)/' "$TEST_FILE"))
 
 # collect rows
 rows=()

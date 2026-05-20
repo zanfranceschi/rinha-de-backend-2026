@@ -1,10 +1,10 @@
 [
   {
-    "id": "rluuan-node",
-    "repo": "https://github.com/rluuan/rinha-de-backend-2026-js"
-  },
-  {
     "id": "rluuan-golang",
     "repo": "https://github.com/rluuan/rinha-de-backend-2026-go"
+  },
+  {
+    "id": "rluuan-node",
+    "repo": "https://github.com/rluuan/rinha-de-backend-2026-js"
   }
 ]

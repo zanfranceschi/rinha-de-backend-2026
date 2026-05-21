@@ -1,4 +1,5 @@
 use std::{
+    env,
     fs::File,
     io::Read,
     path::{Path, PathBuf},
@@ -110,15 +111,25 @@ impl SearchEngine {
         let labels_file = File::open(dir.join("labels.bin"))
             .with_context(|| format!("failed to open {}", dir.join("labels.bin").display()))?;
 
-        let vectors = unsafe { MmapOptions::new().populate().map(&vectors_file) }
-            .context("failed to mmap vectors.bin")?;
-        let labels = unsafe { MmapOptions::new().populate().map(&labels_file) }
-            .context("failed to mmap labels.bin")?;
+        let warm_artifacts_on_startup = env_flag("WARM_ARTIFACTS", false);
+        let mut vectors_options = MmapOptions::new();
+        let mut labels_options = MmapOptions::new();
+        if warm_artifacts_on_startup {
+            vectors_options.populate();
+            labels_options.populate();
+        }
+
+        let vectors =
+            unsafe { vectors_options.map(&vectors_file) }.context("failed to mmap vectors.bin")?;
+        let labels =
+            unsafe { labels_options.map(&labels_file) }.context("failed to mmap labels.bin")?;
 
         validate_artifact_sizes(&meta, &vectors, &labels)?;
-        advise_artifact(&vectors);
-        advise_artifact(&labels);
-        warm_artifacts(&vectors, &labels, &centroids);
+        if warm_artifacts_on_startup {
+            advise_artifact(&vectors);
+            advise_artifact(&labels);
+            warm_artifacts(&vectors, &labels, &centroids);
+        }
 
         Ok(Self {
             meta,
@@ -260,6 +271,18 @@ fn touch_centroids(centroids: &[[f32; PACKED_DIMENSIONS]]) -> u64 {
         }
     }
     checksum
+}
+
+fn env_flag(key: &str, default: bool) -> bool {
+    env::var(key)
+        .ok()
+        .map(|value| {
+            matches!(
+                value.as_str(),
+                "1" | "true" | "TRUE" | "yes" | "YES" | "on" | "ON"
+            )
+        })
+        .unwrap_or(default)
 }
 
 fn validate_meta(meta: &ArtifactMeta) -> Result<()> {

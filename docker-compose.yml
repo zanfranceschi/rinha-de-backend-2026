@@ -12,7 +12,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.05"
+          cpus: "0.10"
           memory: "24MB"
 
   api1:
@@ -21,11 +21,11 @@ services:
       dockerfile: Dockerfile
     platform: linux/amd64
     environment:
-      PROBE_COUNT: "12"
+      PROBE_COUNT: "${PROBE_COUNT:-12}"
     deploy:
       resources:
         limits:
-          cpus: "0.475"
+          cpus: "0.45"
           memory: "160MB"
 
   api2:
@@ -34,9 +34,9 @@ services:
       dockerfile: Dockerfile
     platform: linux/amd64
     environment:
-      PROBE_COUNT: "12"
+      PROBE_COUNT: "${PROBE_COUNT:-12}"
     deploy:
       resources:
         limits:
-          cpus: "0.475"
+          cpus: "0.45"
           memory: "160MB"

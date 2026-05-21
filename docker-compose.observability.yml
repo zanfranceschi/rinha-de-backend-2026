@@ -1,0 +1,10 @@
+services:
+  api1:
+    environment:
+      OBSERVABILITY: "1"
+      OBS_INTERVAL_SECS: "5"
+
+  api2:
+    environment:
+      OBSERVABILITY: "1"
+      OBS_INTERVAL_SECS: "5"

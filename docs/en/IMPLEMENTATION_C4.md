@@ -151,6 +151,30 @@ sequenceDiagram
     N-->>C: 200 JSON
 ```
 
+## Load-test observability
+
+The API image has optional stdout observability for local load tests. It does not add routes, sidecars, or services, so the public API remains limited to `GET /ready` and `POST /fraud-score`.
+
+Enable it with environment variables:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build
+```
+
+Then run the load test and follow both API instances:
+
+```bash
+docker compose logs -f api1 api2
+```
+
+Every `OBS_INTERVAL_SECS` seconds, each API instance emits one aggregate log line with request rate, approved/denied counts, parse/vectorization/search errors, heuristic fallback rate, fraud-score buckets, latency buckets, estimated p99 bucket, probe count, target architecture, and selected SIMD kernels.
+
+Useful knobs:
+
+- `OBSERVABILITY=1` enables aggregate logging.
+- `OBS_INTERVAL_SECS=5` controls the logging interval and is clamped to at least one second.
+- `RUST_LOG=debug` enables per-request degraded-path diagnostics. Keep it at the default `info` during serious p99 measurements.
+
 ## Design Intent
 
 - Keep the request path self-contained and read-only after startup.

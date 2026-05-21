@@ -1,12 +1,11 @@
 use std::{
-    cmp::Ordering,
     fs::File,
     io::Read,
     path::{Path, PathBuf},
 };
 
 use anyhow::{Context, Result, anyhow};
-use memmap2::Mmap;
+use memmap2::{Advice, Mmap, MmapOptions};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -40,6 +39,12 @@ pub struct SearchEngine {
 struct Neighbor {
     distance: u32,
     label: u8,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ClusterCandidate {
+    distance: f32,
+    index: usize,
 }
 
 struct TopK {
@@ -105,10 +110,15 @@ impl SearchEngine {
         let labels_file = File::open(dir.join("labels.bin"))
             .with_context(|| format!("failed to open {}", dir.join("labels.bin").display()))?;
 
-        let vectors = unsafe { Mmap::map(&vectors_file) }.context("failed to mmap vectors.bin")?;
-        let labels = unsafe { Mmap::map(&labels_file) }.context("failed to mmap labels.bin")?;
+        let vectors = unsafe { MmapOptions::new().populate().map(&vectors_file) }
+            .context("failed to mmap vectors.bin")?;
+        let labels = unsafe { MmapOptions::new().populate().map(&labels_file) }
+            .context("failed to mmap labels.bin")?;
 
         validate_artifact_sizes(&meta, &vectors, &labels)?;
+        advise_artifact(&vectors);
+        advise_artifact(&labels);
+        warm_artifacts(&vectors, &labels, &centroids);
 
         Ok(Self {
             meta,
@@ -123,28 +133,11 @@ impl SearchEngine {
     pub fn score(&self, query: &[f32; DIMENSIONS]) -> Result<FraudResponse> {
         let quantized = quantize_vector_padded(query);
         let padded_query = pad_centroid(query);
-        let mut ranked_clusters: Vec<(f32, usize)> = self
-            .centroids
-            .iter()
-            .enumerate()
-            .map(|(idx, centroid)| {
-                (
-                    (self.kernels.centroid_distance)(&padded_query, centroid),
-                    idx,
-                )
-            })
-            .collect();
-        ranked_clusters
-            .sort_by(|left, right| left.0.partial_cmp(&right.0).unwrap_or(Ordering::Equal));
+        let ranked_clusters = self.select_probe_clusters(&padded_query);
 
         let mut top_k = TopK::new();
-        let mut scanned = 0_usize;
-        for (_, cluster_idx) in ranked_clusters {
+        for cluster_idx in ranked_clusters {
             self.scan_cluster(cluster_idx, &quantized, &mut top_k)?;
-            scanned += 1;
-            if scanned >= self.meta.probe_count && top_k.len >= TOP_K {
-                break;
-            }
         }
 
         if top_k.len < TOP_K {
@@ -164,6 +157,26 @@ impl SearchEngine {
 
     pub fn centroid_kernel_mode(&self) -> KernelMode {
         self.kernels.centroid_mode
+    }
+
+    pub fn lock_artifacts(&self) -> Result<()> {
+        self.vectors.lock().context("failed to mlock vectors.bin")?;
+        self.labels.lock().context("failed to mlock labels.bin")
+    }
+
+    fn select_probe_clusters(&self, query: &[f32; PACKED_DIMENSIONS]) -> Vec<usize> {
+        let probe_count = self.meta.probe_count.min(self.centroids.len()).max(1);
+        let mut top: Vec<ClusterCandidate> = Vec::with_capacity(probe_count);
+
+        for (idx, centroid) in self.centroids.iter().enumerate() {
+            let candidate = ClusterCandidate {
+                distance: (self.kernels.centroid_distance)(query, centroid),
+                index: idx,
+            };
+            insert_cluster_candidate(&mut top, probe_count, candidate);
+        }
+
+        top.into_iter().map(|candidate| candidate.index).collect()
     }
 
     fn scan_cluster(
@@ -190,6 +203,63 @@ impl SearchEngine {
         }
         Ok(())
     }
+}
+
+fn insert_cluster_candidate(
+    top: &mut Vec<ClusterCandidate>,
+    probe_count: usize,
+    candidate: ClusterCandidate,
+) {
+    if top.len() == probe_count && candidate.distance >= top[probe_count - 1].distance {
+        return;
+    }
+
+    let pos = top
+        .iter()
+        .position(|existing| candidate.distance < existing.distance)
+        .unwrap_or(top.len());
+
+    if top.len() < probe_count {
+        top.insert(pos, candidate);
+    } else {
+        top.insert(pos, candidate);
+        top.truncate(probe_count);
+    }
+}
+
+fn advise_artifact(mmap: &Mmap) {
+    let _ = mmap.advise(Advice::Random);
+    let _ = mmap.advise(Advice::WillNeed);
+}
+
+fn warm_artifacts(vectors: &Mmap, labels: &Mmap, centroids: &[[f32; PACKED_DIMENSIONS]]) {
+    let mut checksum = 0_u64;
+    checksum ^= touch_bytes(vectors);
+    checksum ^= touch_bytes(labels);
+    checksum ^= touch_centroids(centroids);
+    std::hint::black_box(checksum);
+}
+
+fn touch_bytes(bytes: &[u8]) -> u64 {
+    const PAGE_SIZE: usize = 4096;
+    let mut checksum = 0_u64;
+    for idx in (0..bytes.len()).step_by(PAGE_SIZE) {
+        checksum ^= bytes[idx] as u64;
+    }
+    if let Some(last) = bytes.last() {
+        checksum ^= *last as u64;
+    }
+    checksum
+}
+
+fn touch_centroids(centroids: &[[f32; PACKED_DIMENSIONS]]) -> u64 {
+    let mut checksum = 0_u64;
+    for centroid in centroids {
+        for value in centroid {
+            checksum ^= value.to_bits() as u64;
+        }
+    }
+    checksum
 }
 
 fn validate_meta(meta: &ArtifactMeta) -> Result<()> {
@@ -301,5 +371,16 @@ mod tests {
             list_lengths: vec![1],
         };
         assert!(validate_meta(&meta).is_err());
+    }
+
+    #[test]
+    fn cluster_candidates_keep_smallest_distances_in_order() {
+        let mut top = Vec::new();
+        for (distance, index) in [(5.0, 5), (2.0, 2), (7.0, 7), (1.0, 1), (3.0, 3)] {
+            insert_cluster_candidate(&mut top, 3, ClusterCandidate { distance, index });
+        }
+
+        let selected: Vec<usize> = top.into_iter().map(|candidate| candidate.index).collect();
+        assert_eq!(selected, vec![1, 2, 3]);
     }
 }

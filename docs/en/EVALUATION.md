@@ -8,6 +8,11 @@ The load test uses [k6](https://k6.io/) in a simple incremental request scenario
 
 To run the test, follow the [official k6 instructions](https://grafana.com/docs/k6/latest/).
 
+The project also provides a `docker-compose.yml` file at the `test` directory to simplify running test scenarios locally:
+
+- `docker compose --profile test up`: runs the full test suite;
+- `docker compose --profile smoke up`: runs quick smoke tests to validate the application's basic behavior.
+
 The instructions for actually having your backend tested are [described here](/docs/en/SUBMISSION.md) in the **Test Execution** section.
 
 ## What is tested

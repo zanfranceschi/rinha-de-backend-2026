@@ -5,7 +5,9 @@ Este documento descreve a implementação Rust atual adicionada neste repositór
 Arquivos relevantes:
 
 - [`docker-compose.yml`](../../docker-compose.yml)
-- [`nginx.conf`](../../nginx.conf)
+- [`lb/nginx.conf`](../../lb/nginx.conf)
+- [`lb/haproxy-tcp.cfg`](../../lb/haproxy-tcp.cfg)
+- [`lb/haproxy-uds.cfg`](../../lb/haproxy-uds.cfg)
 - [`src/bin/server.rs`](../../src/bin/server.rs)
 - [`src/lib.rs`](../../src/lib.rs)
 - [`src/search.rs`](../../src/search.rs)
@@ -16,7 +18,7 @@ Arquivos relevantes:
 ```mermaid
 flowchart LR
     card[Sistema autorizador<br/>ou cliente de carga]
-    service[Backend de detecção de fraude<br/>Rust + nginx]
+    service[Backend de detecção de fraude<br/>API Rust + adaptador de load balancer]
     dataset[Dados estáticos de referência<br/>normalization.json<br/>mcc_risk.json<br/>references.json.gz]
 
     card -->|GET /ready<br/>POST /fraud-score| service
@@ -40,8 +42,8 @@ flowchart LR
 
         subgraph traffic[caminho da requisição]
             direction LR
-            lb[nginx load balancer<br/>porta 9999<br/>somente round-robin]
-            apis[Réplicas da API<br/>api1 + api2<br/>serviço Rust com axum]
+            lb[adaptador de load balancer<br/>porta 9999<br/>somente round-robin]
+            apis[Réplicas da API<br/>api1 + api2<br/>serviço Rust com axum<br/>upstream TCP ou Unix socket]
         end
 
         subgraph data[dados carregados por cada réplica no startup]
@@ -52,14 +54,15 @@ flowchart LR
     end
 
     client -->|HTTP| lb
-    lb -->|proxy para api1/api2| apis
+    lb -->|proxy para api1/api2<br/>TCP ou UDS| apis
     config -->|load no startup| apis
     artifacts -->|memory-map no startup| apis
 ```
 
 ### Notas
 
-- O `nginx` não executa lógica de negócio. Ele apenas encaminha requisições para as duas instâncias upstream.
+- O load balancer não executa lógica de negócio. Ele apenas encaminha requisições para as duas instâncias upstream.
+- O compose raiz usa nginx por padrão. Overlays de compose podem trocar o adaptador para HAProxy sobre TCP ou HAProxy sobre Unix sockets sem alterar o código da API ou os scripts de carga.
 - Cada instância da API carrega o mesmo conjunto de artefatos read-only e responde de forma independente.
 - As instâncias da API não dependem de banco externo, cache ou vector store no hot path.
 
@@ -140,16 +143,16 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant C as Cliente
-    participant N as nginx
+    participant L as load balancer
     participant A as API Rust
     participant S as Engine de busca
 
-    C->>N: POST /fraud-score
-    N->>A: requisição proxied
+    C->>L: POST /fraud-score
+    L->>A: requisição proxied
     A->>A: parse do JSON
     alt JSON/schema inválido ou campos de timestamp inválidos
-        A-->>N: 400 JSON de negação
-        N-->>C: 400 JSON de negação
+        A-->>L: 400 JSON de negação
+        L-->>C: 400 JSON de negação
     else requisição válida
         A->>A: vetorização para 14 dimensões
         A->>A: padding da query para 16 lanes
@@ -163,10 +166,20 @@ sequenceDiagram
         else erro de busca
             A->>A: cálculo do fallback heurístico
         end
-        A-->>N: 200 JSON
-        N-->>C: 200 JSON
+        A-->>L: 200 JSON
+        L-->>C: 200 JSON
     end
 ```
+
+## Variantes de load balancer
+
+A API expõe um contrato estável de upstream:
+
+- `LISTEN_MODE=tcp|unix`, padrão `tcp`.
+- `BIND_ADDR=0.0.0.0:9999` no modo TCP.
+- `BIND_SOCKET=/sockets/apiN.sock` no modo Unix socket.
+
+O contrato visto pelo cliente não muda: a stack continua expondo `GET /ready` e `POST /fraud-score` na porta `9999` do host.
 
 ## Observabilidade para testes de carga
 

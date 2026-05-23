@@ -58,6 +58,7 @@ RUN chown -R appuser:appuser /app
 USER appuser
 EXPOSE 9999
 
+ENV LISTEN_MODE=tcp
 ENV BIND_ADDR=0.0.0.0:9999
 ENV ARTIFACT_DIR=/app/artifacts
 ENV NORMALIZATION_PATH=/app/resources/normalization.json

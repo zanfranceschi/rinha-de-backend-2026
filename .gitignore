@@ -2,7 +2,8 @@
 data-generator/generate
 resources/references.json
 .env
-test/results.json
+test/results.*
 temporary-results
 target
 docker/artifacts
+.run

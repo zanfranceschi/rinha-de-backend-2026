@@ -60,7 +60,8 @@ Here is an example of the directory structure on each branch:
 
 # submission branch
 ├── docker-compose.yml
-├── nginx.conf
+├── lb/
+│   └── nginx.conf
 ├── info.json
 └── init.sql
 ```
@@ -101,4 +102,3 @@ Specs:
 
 Home of this edition's Rinha!
 ![rinha's mac mini](/misc/macmini-rinha.png)
-

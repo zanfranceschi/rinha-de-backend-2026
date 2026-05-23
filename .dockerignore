@@ -2,3 +2,4 @@
 target
 docker/artifacts
 test/results.json
+.run

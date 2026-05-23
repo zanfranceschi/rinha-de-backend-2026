@@ -1,11 +1,29 @@
+x-api-common: &api-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
+  platform: linux/amd64
+  environment:
+    PROBE_COUNT: "${PROBE_COUNT:-12}"
+    LISTEN_MODE: tcp
+    BIND_ADDR: 0.0.0.0:9999
+  deploy:
+    resources:
+      limits:
+        cpus: "0.45"
+        memory: "160MB"
+
 services:
   lb:
     image: nginx:1.29-alpine
     platform: linux/amd64
+    command: ["nginx", "-c", "/tmp/nginx.conf", "-g", "daemon off;"]
     ports:
       - "9999:9999"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./lb/nginx.conf:/tmp/nginx.conf:ro
     depends_on:
       - api1
       - api2
@@ -16,31 +34,7 @@ services:
           memory: "24MB"
 
   api1:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
-    platform: linux/amd64
-    environment:
-      PROBE_COUNT: "${PROBE_COUNT:-12}"
-    deploy:
-      resources:
-        limits:
-          cpus: "0.45"
-          memory: "160MB"
+    <<: *api-common
 
   api2:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
-    platform: linux/amd64
-    environment:
-      PROBE_COUNT: "${PROBE_COUNT:-12}"
-    deploy:
-      resources:
-        limits:
-          cpus: "0.45"
-          memory: "160MB"
+    <<: *api-common

@@ -5,7 +5,9 @@ This document describes the current Rust implementation added in this repository
 Relevant source files:
 
 - [`docker-compose.yml`](../../docker-compose.yml)
-- [`nginx.conf`](../../nginx.conf)
+- [`lb/nginx.conf`](../../lb/nginx.conf)
+- [`lb/haproxy-tcp.cfg`](../../lb/haproxy-tcp.cfg)
+- [`lb/haproxy-uds.cfg`](../../lb/haproxy-uds.cfg)
 - [`src/bin/server.rs`](../../src/bin/server.rs)
 - [`src/lib.rs`](../../src/lib.rs)
 - [`src/search.rs`](../../src/search.rs)
@@ -16,7 +18,7 @@ Relevant source files:
 ```mermaid
 flowchart LR
     card[Card authorization system<br/>or load-test client]
-    service[Fraud detection backend<br/>Rust + nginx]
+    service[Fraud detection backend<br/>Rust API + load balancer adapter]
     dataset[Static reference data<br/>normalization.json<br/>mcc_risk.json<br/>references.json.gz]
 
     card -->|GET /ready<br/>POST /fraud-score| service
@@ -36,25 +38,31 @@ flowchart LR
     client[Client / k6 / card system]
 
     subgraph compose[docker-compose topology]
-        lb[nginx load balancer<br/>port 9999<br/>round-robin only]
-        api1[API instance 1<br/>Rust axum service]
-        api2[API instance 2<br/>Rust axum service]
-        artifacts[(Packed search artifacts<br/>meta.json<br/>centroids.bin<br/>vectors.bin<br/>labels.bin)]
-        config[(Runtime config files<br/>normalization.json<br/>mcc_risk.json)]
+        direction TB
+
+        subgraph traffic[request path]
+            direction LR
+            lb[load balancer adapter<br/>port 9999<br/>round-robin only]
+            apis[API replicas<br/>api1 + api2<br/>Rust axum service<br/>TCP or Unix-socket upstream]
+        end
+
+        subgraph data[startup data loaded by each API replica]
+            direction LR
+            config[(Runtime config files<br/>normalization.json<br/>mcc_risk.json)]
+            artifacts[(Packed search artifacts<br/>meta.json<br/>centroids.bin<br/>vectors.bin<br/>labels.bin)]
+        end
     end
 
     client -->|HTTP| lb
-    lb -->|proxy| api1
-    lb -->|proxy| api2
-    artifacts -->|memory-map on startup| api1
-    artifacts -->|memory-map on startup| api2
-    config -->|load on startup| api1
-    config -->|load on startup| api2
+    lb -->|proxy to api1/api2<br/>TCP or UDS| apis
+    config -->|load on startup| apis
+    artifacts -->|memory-map on startup| apis
 ```
 
 ### Notes
 
-- `nginx` performs no business logic. It only forwards requests to the two upstream API containers.
+- The load balancer performs no business logic. It only forwards requests to the two upstream API containers.
+- The default root compose file uses nginx. Overlay compose files can swap the adapter to HAProxy over TCP or HAProxy over Unix sockets without changing API code or load-test scripts.
 - Each API instance loads the same read-only artifact set and answers requests independently.
 - The API containers do not depend on an external database, cache, or vector store in the hot path.
 
@@ -70,20 +78,22 @@ flowchart TD
     engine[Search engine<br/>IVF-style clustered scan<br/>SIMD kernel dispatch]
     topk[Top-5 aggregator<br/>fixed-size nearest set]
     decision[Decision module<br/>fraud_count / 5<br/>threshold 0.6]
-    fallback[Fallback scorer<br/>always returns HTTP 200]
-    resp[HTTP JSON response]
+    client_error[Client error response<br/>HTTP 400 + deny JSON]
+    fallback[Search fallback scorer<br/>HTTP 200 + heuristic JSON]
+    resp[HTTP JSON response<br/>200 or 400]
 
     req --> ready
     req --> score
     score --> parse
     parse -->|valid payload| vectorize
-    parse -->|invalid payload| fallback
+    parse -->|invalid JSON/schema| client_error
     vectorize -->|vector ok| engine
-    vectorize -->|error| fallback
+    vectorize -->|invalid semantic fields| client_error
     engine --> topk
     engine -->|search error| fallback
     topk --> decision
     decision --> resp
+    client_error --> resp
     fallback --> resp
 ```
 
@@ -91,11 +101,12 @@ flowchart TD
 
 - **Request parser**: deserializes the incoming JSON body into the Rust DTOs.
 - **Vectorization module**: applies the exact 14-dimension mapping from the challenge rules, including UTC hour/day extraction, `-1` sentinels for missing last-transaction fields, clamping, and MCC fallback.
+- **Client error response**: returns `400 Bad Request` with a deny JSON body for malformed JSON, missing fields, wrong field types, or semantically invalid fields such as malformed timestamps.
 - **Search engine**: pads and quantizes the request vector, ranks coarse centroids, probes a bounded number of inverted lists, and computes squared Euclidean distance over packed vectors.
 - **SIMD kernel dispatch**: selects `AVX2` kernels at startup on `x86_64` when available, otherwise uses the scalar implementations.
 - **Top-5 aggregator**: maintains the current nearest five candidates without allocating a large sortable structure.
 - **Decision module**: converts the five labels into `fraud_score` and `approved`.
-- **Fallback scorer**: returns valid JSON on degraded paths so the system avoids non-200 responses during scoring.
+- **Search fallback scorer**: returns valid `200` JSON for valid requests when the search engine fails, preserving availability during scoring.
 
 ## Level 4: Artifact Build Pipeline
 
@@ -132,24 +143,43 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant C as Client
-    participant N as nginx
+    participant L as load balancer
     participant A as Rust API
     participant S as Search engine
 
-    C->>N: POST /fraud-score
-    N->>A: proxied request
+    C->>L: POST /fraud-score
+    L->>A: proxied request
     A->>A: parse JSON
-    A->>A: vectorize to 14 dims
-    A->>A: pad query to 16 lanes
-    A->>S: score(vector)
-    S->>S: dispatch AVX2 or scalar kernels
-    S->>S: rank padded centroids
-    S->>S: scan probe lists
-    S-->>A: top-5 labels
-    A->>A: compute fraud_score
-    A-->>N: 200 JSON
-    N-->>C: 200 JSON
+    alt invalid JSON/schema or invalid timestamp fields
+        A-->>L: 400 deny JSON
+        L-->>C: 400 deny JSON
+    else valid request
+        A->>A: vectorize to 14 dims
+        A->>A: pad query to 16 lanes
+        A->>S: score(vector)
+        S->>S: dispatch AVX2 or scalar kernels
+        S->>S: rank padded centroids
+        S->>S: scan probe lists
+        alt search succeeds
+            S-->>A: top-5 labels
+            A->>A: compute fraud_score
+        else search fails
+            A->>A: compute heuristic fallback
+        end
+        A-->>L: 200 JSON
+        L-->>C: 200 JSON
+    end
 ```
+
+## Load-balancer variants
+
+The API exposes a stable upstream contract:
+
+- `LISTEN_MODE=tcp|unix`, default `tcp`.
+- `BIND_ADDR=0.0.0.0:9999` in TCP mode.
+- `BIND_SOCKET=/sockets/apiN.sock` in Unix-socket mode.
+
+The client-facing contract remains unchanged: the stack still exposes `GET /ready` and `POST /fraud-score` on host port `9999`. See [LOAD_BALANCER_VARIANTS.md](./LOAD_BALANCER_VARIANTS.md) for the exact commands and comparison workflow.
 
 ## Load-test observability
 
@@ -217,7 +247,7 @@ Expected startup and observability logs should include `build_cpu_profile="haswe
 - Keep the request path self-contained and read-only after startup.
 - Move heavy dataset work into an offline build step.
 - Pad vectors and centroids to 16 lanes so the runtime can use straightforward SIMD loads instead of tail handling on 14-dimension records.
-- Prefer valid `200` JSON responses over surfacing request-path errors.
+- Return explicit `400` responses for client-side payload errors while keeping valid-request internal search failures on a `200` heuristic fallback.
 - Keep the runtime topology compliant with the competition requirement of one load balancer plus two API instances.
 
 [← English README](./README.md)

@@ -62,7 +62,8 @@ Exemplo de estrutura de diretórios por branch:
 
 # branch submission
 ├── docker-compose.yml
-├── nginx.conf
+├── lb/
+│   └── nginx.conf
 ├── info.json
 └── init.sql
 ```

@@ -1,6 +1,10 @@
 [
-    {
-      "id": "heimdall-6-go",
-      "repo": "https://github.com/peregrinno/heimdall"
-    }
-  ]
+  {
+    "id": "heimdall-go",
+    "repo": "https://github.com/peregrinno/heimdall"
+  },
+  {
+    "id": "red-hela-python",
+    "repo": "https://github.com/peregrinno/red-hela"
+  }
+]

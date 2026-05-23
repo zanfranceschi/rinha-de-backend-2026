@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { check } from 'k6';
 import { SharedArray } from 'k6/data';
 import { Counter } from 'k6/metrics';
-import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
+import { textSummary } from './k6-summary.js';
 import exec from 'k6/execution';
 
 const testData = new SharedArray('test-data', function () {
@@ -89,6 +89,9 @@ export function handleSummary(data) {
     const TX_CORTE = 0.15;
     const SCORE_P99_CORTE = -3000;
     const SCORE_DET_CORTE = -3000;
+    const PRECISION = __ENV.SCORE_PRECISION ? parseInt(__ENV.SCORE_PRECISION) : 2;
+
+    const r = (v, decimals) => +v.toFixed(decimals);
 
     const httpDuration = data.metrics.http_req_duration.values;
     const p99 = httpDuration['p(99)'];
@@ -138,7 +141,7 @@ export function handleSummary(data) {
 
     const result = {
         expected: expectedStats,
-        p99: p99.toFixed(2) + 'ms',
+        p99: r(p99, PRECISION) + 'ms',
         scoring: {
             breakdown: {
                 false_positive_detections: fp,
@@ -147,20 +150,30 @@ export function handleSummary(data) {
                 true_negative_detections: tn,
                 http_errors: errs,
             },
-            failure_rate: +(failureRate * 100).toFixed(2) + '%',
+            failure_rate: r(failureRate * 100, PRECISION) + '%',
             weighted_errors_E: E,
-            error_rate_epsilon: +epsilon.toFixed(6),
+            error_rate_epsilon: r(epsilon, PRECISION + 4),
             p99_score: {
-                value: +p99Score.toFixed(2),
+                value: r(p99Score, PRECISION),
                 cut_triggered: p99CutTriggered,
             },
             detection_score: {
-                value: +detScore.toFixed(2),
-                rate_component: cutTriggered ? null : +rateComponent.toFixed(2),
-                absolute_penalty: cutTriggered ? null : +absolutePenalty.toFixed(2),
+                value: r(detScore, PRECISION),
+                rate_component: cutTriggered ? null : r(rateComponent, PRECISION),
+                absolute_penalty: cutTriggered ? null : r(absolutePenalty, PRECISION),
                 cut_triggered: cutTriggered,
             },
-            final_score: +finalScore.toFixed(2),
+            final_score: r(finalScore, PRECISION),
+            raw: {
+                p99_ms: p99,
+                failure_rate: failureRate,
+                error_rate_epsilon: epsilon,
+                p99_score: p99Score,
+                detection_score: detScore,
+                rate_component: cutTriggered ? null : rateComponent,
+                absolute_penalty: cutTriggered ? null : absolutePenalty,
+                final_score: finalScore,
+            },
         },
     };
 

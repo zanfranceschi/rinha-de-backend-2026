@@ -2,5 +2,9 @@
     {
         "id": "andrade-cpp-ivf",
         "repo": "https://github.com/viniciusdsandrade/rinha-de-backend-2026"
+    },
+    {
+        "id": "andrade-rust-ivf",
+        "repo": "https://github.com/viniciusdsandrade/rinha-de-backend-2026-rust"
     }
 ]

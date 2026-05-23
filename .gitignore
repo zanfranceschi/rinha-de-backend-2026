@@ -4,3 +4,4 @@ resources/references.json
 .env
 test/results.json
 temporary-results
+misc/participant-removal.sh

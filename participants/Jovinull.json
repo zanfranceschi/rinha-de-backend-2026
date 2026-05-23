@@ -2,5 +2,9 @@
   {
     "id": "jovinull-rust",
     "repo": "https://github.com/jovinull/rinha-2026-rust"
+  },
+  {
+    "id": "jovinull-zig",
+    "repo": "https://github.com/Jovinull/rinha-2026-zig"
   }
 ]

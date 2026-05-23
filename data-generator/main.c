@@ -390,7 +390,7 @@ static Profile pick_profile(Rng *r, double fraud_ratio) {
 static const char *LEGIT_MCCS[] = {"5411", "5812", "5912", "5311"};
 static const char *FRAUD_MCCS[] = {"7995", "7801", "7802"};
 
-static Request gen_request(Rng *r, Profile p, const MCCMap *mcc_map) {
+static Request gen_request(Rng *r, Profile p, const MCCMap *mcc_map, int random_dates) {
     Request req = {0};
 
     sprintf(req.id, "tx-%u", pcg32(r));
@@ -408,7 +408,6 @@ static Request gen_request(Rng *r, Profile p, const MCCMap *mcc_map) {
         case BORDERLINE: req.installments = rng_int(r, 3, 8); break;
     }
 
-    int day = rng_int(r, 10, 28);
     int h_lo = 8, h_hi = 21;
     switch (p) {
         case LEGIT:      h_lo = 8;  h_hi = 21; break;
@@ -418,7 +417,16 @@ static Request gen_request(Rng *r, Profile p, const MCCMap *mcc_map) {
     int hour = rng_int(r, h_lo, h_hi);
     int mn   = rng_int(r, 0, 60);
     int sec  = rng_int(r, 0, 60);
-    sprintf(req.requested_at, "2026-03-%02dT%02d:%02d:%02dZ", day, hour, mn, sec);
+    if (random_dates) {
+        /* Datas de 2026-03-01 até 2030-12-31 — qualquer dia válido. */
+        int year  = rng_int(r, 2026, 2031);
+        int month = (year == 2026) ? rng_int(r, 3, 13) : rng_int(r, 1, 13);
+        int day   = rng_int(r, 1, 29); /* 1..28: válido em todo mês */
+        sprintf(req.requested_at, "%04d-%02d-%02dT%02d:%02d:%02dZ", year, month, day, hour, mn, sec);
+    } else {
+        int day = rng_int(r, 10, 28);
+        sprintf(req.requested_at, "2026-03-%02dT%02d:%02d:%02dZ", day, hour, mn, sec);
+    }
 
     switch (p) {
         case LEGIT:      req.cust_avg = rng_range(r, req.amount / 0.5, req.amount * 2.0); break;
@@ -483,13 +491,21 @@ static Request gen_request(Rng *r, Profile p, const MCCMap *mcc_map) {
     } else {
         req.has_last = 1;
         time_t req_ep = ts_epoch(req.requested_at);
-        int mins_back = 30;
-        switch (p) {
-            case LEGIT:      mins_back = rng_int(r, 30, 720); break;
-            case FRAUD:      mins_back = rng_int(r, 1, 10); break;
-            case BORDERLINE: mins_back = rng_int(r, 5, 120); break;
+        int64_t secs_back;
+        if (random_dates) {
+            /* Qualquer momento no passado: 1 min até ~10 anos. */
+            uint64_t r64 = ((uint64_t)pcg32(r) << 32) | pcg32(r);
+            secs_back = 60 + (int64_t)(r64 % (uint64_t)(10LL * 365 * 24 * 3600));
+        } else {
+            int mins_back = 30;
+            switch (p) {
+                case LEGIT:      mins_back = rng_int(r, 30, 720); break;
+                case FRAUD:      mins_back = rng_int(r, 1, 10); break;
+                case BORDERLINE: mins_back = rng_int(r, 5, 120); break;
+            }
+            secs_back = (int64_t)mins_back * 60;
         }
-        epoch_to_ts(req_ep - mins_back * 60, req.last_ts);
+        epoch_to_ts(req_ep - secs_back, req.last_ts);
         switch (p) {
             case LEGIT:      req.last_km = rng_range(r, 0, 20); break;
             case FRAUD:      req.last_km = rng_range(r, 200, 1000); break;
@@ -657,6 +673,10 @@ static void usage(const char *prog) {
         "  --refs-seed N        RNG seed for reference generation (default: 42)\n"
         "  --payloads-seed N    RNG seed for payload generation (default: 4242)\n"
         "  --pretty-json        indent JSON output (default: compact)\n"
+        "  --randomize-payload-dates\n"
+        "                       payloads usam datas aleatórias: requested_at em\n"
+        "                       2026-03..2030-12, last_transaction até 10 anos\n"
+        "                       atrás (refs continuam em 2026-03)\n"
         "  --help               show this message\n",
         prog);
 }
@@ -673,6 +693,7 @@ int main(int argc, char **argv) {
     const char *payloads_out  = "test/test-data.json";
     uint64_t refs_seed        = REF_SEED;
     uint64_t payloads_seed    = PAY_SEED;
+    int randomize_payload_dates = 0;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--refs") == 0 && i + 1 < argc)
@@ -701,6 +722,8 @@ int main(int argc, char **argv) {
             payloads_seed = strtoull(argv[++i], NULL, 10);
         else if (strcmp(argv[i], "--pretty-json") == 0)
             pretty_json = 1;
+        else if (strcmp(argv[i], "--randomize-payload-dates") == 0)
+            randomize_payload_dates = 1;
         else if (strcmp(argv[i], "--help") == 0) {
             usage(argv[0]);
             return 0;
@@ -730,7 +753,7 @@ int main(int argc, char **argv) {
 
         for (int i = 0; i < ref_size; i++) {
             Profile p   = pick_profile(&rng, fraud_ratio_refs);
-            Request req = gen_request(&rng, p, &mcc);
+            Request req = gen_request(&rng, p, &mcc, 0);
             normalize(&req, &norm, &mcc, refs[i].v);
             for (int j = 0; j < VDIM; j++) refs[i].v[j] = round4(refs[i].v[j]);
 
@@ -769,7 +792,7 @@ int main(int argc, char **argv) {
     /* Pass 1 (sequencial): consome RNG — determinismo bit-a-bit. */
     for (int i = 0; i < payload_size; i++) {
         Profile p = pick_profile(&rng, fraud_ratio_payloads);
-        entries[i].req = gen_request(&rng, p, &mcc);
+        entries[i].req = gen_request(&rng, p, &mcc, randomize_payload_dates);
         normalize(&entries[i].req, &norm, &mcc, entries[i].vec);
         for (int j = 0; j < VDIM; j++) entries[i].vec[j] = round4(entries[i].vec[j]);
     }

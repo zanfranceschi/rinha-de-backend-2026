@@ -36,20 +36,25 @@ flowchart LR
     client[Cliente / k6 / sistema autorizador]
 
     subgraph compose[topologia docker-compose]
-        lb[nginx load balancer<br/>porta 9999<br/>somente round-robin]
-        api1[Instância 1 da API<br/>serviço Rust com axum]
-        api2[Instância 2 da API<br/>serviço Rust com axum]
-        artifacts[(Artefatos compactados de busca<br/>meta.json<br/>centroids.bin<br/>vectors.bin<br/>labels.bin)]
-        config[(Arquivos de configuração<br/>normalization.json<br/>mcc_risk.json)]
+        direction TB
+
+        subgraph traffic[caminho da requisição]
+            direction LR
+            lb[nginx load balancer<br/>porta 9999<br/>somente round-robin]
+            apis[Réplicas da API<br/>api1 + api2<br/>serviço Rust com axum]
+        end
+
+        subgraph data[dados carregados por cada réplica no startup]
+            direction LR
+            config[(Arquivos de configuração<br/>normalization.json<br/>mcc_risk.json)]
+            artifacts[(Artefatos compactados de busca<br/>meta.json<br/>centroids.bin<br/>vectors.bin<br/>labels.bin)]
+        end
     end
 
     client -->|HTTP| lb
-    lb -->|proxy| api1
-    lb -->|proxy| api2
-    artifacts -->|memory-map no startup| api1
-    artifacts -->|memory-map no startup| api2
-    config -->|load no startup| api1
-    config -->|load no startup| api2
+    lb -->|proxy para api1/api2| apis
+    config -->|load no startup| apis
+    artifacts -->|memory-map no startup| apis
 ```
 
 ### Notas
@@ -70,20 +75,22 @@ flowchart TD
     engine[Engine de busca<br/>varredura clusterizada estilo IVF<br/>despacho de kernels SIMD]
     topk[Agregador top-5<br/>conjunto fixo de vizinhos]
     decision[Módulo de decisão<br/>fraud_count / 5<br/>threshold 0.6]
-    fallback[Scorer de fallback<br/>sempre devolve HTTP 200]
-    resp[Resposta JSON]
+    client_error[Resposta de erro do cliente<br/>HTTP 400 + JSON de negação]
+    fallback[Scorer de fallback de busca<br/>HTTP 200 + JSON heurístico]
+    resp[Resposta JSON<br/>200 ou 400]
 
     req --> ready
     req --> score
     score --> parse
     parse -->|payload válido| vectorize
-    parse -->|payload inválido| fallback
+    parse -->|JSON/schema inválido| client_error
     vectorize -->|vetor ok| engine
-    vectorize -->|erro| fallback
+    vectorize -->|campos semanticamente inválidos| client_error
     engine --> topk
     engine -->|erro de busca| fallback
     topk --> decision
     decision --> resp
+    client_error --> resp
     fallback --> resp
 ```
 
@@ -91,11 +98,12 @@ flowchart TD
 
 - **Parser da requisição**: desserializa o corpo JSON de entrada para os DTOs Rust.
 - **Módulo de vetorização**: aplica o mapeamento exato das 14 dimensões definido no desafio, incluindo extração UTC de hora/dia, sentinelas `-1` para ausência de última transação, clamp e fallback de MCC.
+- **Resposta de erro do cliente**: retorna `400 Bad Request` com JSON de negação para JSON malformado, campos ausentes, tipos incorretos ou campos semanticamente inválidos, como timestamps malformados.
 - **Engine de busca**: faz padding e quantização do vetor da requisição, ranqueia centróides grosseiros, percorre um número limitado de listas invertidas e calcula distância Euclidiana quadrática sobre vetores compactados.
 - **Despacho de kernels SIMD**: seleciona kernels `AVX2` no startup em `x86_64` quando disponíveis; caso contrário, usa as implementações escalares.
 - **Agregador top-5**: mantém os cinco candidatos mais próximos sem precisar alocar uma estrutura grande para ordenar tudo.
 - **Módulo de decisão**: converte os cinco rótulos em `fraud_score` e `approved`.
-- **Scorer de fallback**: devolve JSON válido em caminhos degradados para evitar respostas não-200 durante a pontuação.
+- **Scorer de fallback de busca**: devolve JSON válido com `200` para requisições válidas quando a engine de busca falha, preservando disponibilidade durante a pontuação.
 
 ## Nível 4: Pipeline de Construção dos Artefatos
 
@@ -139,24 +147,94 @@ sequenceDiagram
     C->>N: POST /fraud-score
     N->>A: requisição proxied
     A->>A: parse do JSON
-    A->>A: vetorização para 14 dimensões
-    A->>A: padding da query para 16 lanes
-    A->>S: score(vector)
-    S->>S: despacho AVX2 ou escalar
-    S->>S: ranking de centróides com padding
-    S->>S: varredura das probe lists
-    S-->>A: labels top-5
-    A->>A: cálculo do fraud_score
-    A-->>N: 200 JSON
-    N-->>C: 200 JSON
+    alt JSON/schema inválido ou campos de timestamp inválidos
+        A-->>N: 400 JSON de negação
+        N-->>C: 400 JSON de negação
+    else requisição válida
+        A->>A: vetorização para 14 dimensões
+        A->>A: padding da query para 16 lanes
+        A->>S: score(vector)
+        S->>S: despacho AVX2 ou escalar
+        S->>S: ranking de centróides com padding
+        S->>S: varredura das probe lists
+        alt busca com sucesso
+            S-->>A: labels top-5
+            A->>A: cálculo do fraud_score
+        else erro de busca
+            A->>A: cálculo do fallback heurístico
+        end
+        A-->>N: 200 JSON
+        N-->>C: 200 JSON
+    end
 ```
+
+## Observabilidade para testes de carga
+
+A imagem da API tem observabilidade opcional via stdout para testes locais de carga. Ela não adiciona rotas, sidecars ou serviços, então a API pública continua limitada a `GET /ready` e `POST /fraud-score`.
+
+Ative com variáveis de ambiente:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build
+```
+
+Depois rode o teste de carga e acompanhe as duas instâncias:
+
+```bash
+docker compose logs -f api1 api2
+```
+
+A cada `OBS_INTERVAL_SECS` segundos, cada instância emite uma linha agregada com taxa de requisições, contagens de aprovação/negação, erros de parse/vetorização/busca, taxa de fallback heurístico, buckets de `fraud_score`, buckets de latência, bucket p99 estimado, quantidade de probes, arquitetura alvo e kernels SIMD selecionados.
+
+Knobs úteis:
+
+- `OBSERVABILITY=1` ativa o log agregado.
+- `OBS_INTERVAL_SECS=5` controla o intervalo de log e é limitado a no mínimo um segundo.
+- `RUST_LOG=debug` ativa diagnósticos por requisição em caminhos degradados. Mantenha o padrão `info` durante medições sérias de p99.
+
+## Perfis de Build
+
+A imagem Docker suporta dois perfis de CPU via `BUILD_CPU_PROFILE`:
+
+- `generic` é o padrão. Ele gera um binário `linux/amd64` portátil e ainda usa despacho AVX2 em runtime quando o host expõe AVX2.
+- `haswell` é o perfil orientado à submissão. Ele compila o servidor com `target-cpu=haswell` e features explícitas `+avx2,+fma,+sse4.2,+popcnt`.
+
+Use o perfil Haswell apenas em máquinas `x86_64` com AVX2:
+
+```bash
+BUILD_CPU_PROFILE=haswell PROBE_COUNT=6 docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build
+```
+
+Em um host Intel Mac antigo, verifique primeiro se o macOS expõe AVX2. Por exemplo, um MacBook Pro mid-2014 com i5-4278U é Haswell e pode ser usado quando `hw.optional.avx2_0` é `1`:
+
+```bash
+sysctl -n machdep.cpu.brand_string
+sysctl -a | grep -i avx2
+```
+
+O limitador prático em macOS antigo, como Big Sur, é o suporte do Docker Desktop, não a CPU. Versões atuais do Docker Desktop não suportam mais Big Sur, então use uma versão antiga do Docker Desktop em uma máquina isolada de benchmark ou instale Linux no MacBook e use Docker Engine.
+
+Depois de instalar o Docker, confirme que o container Linux enxerga AVX2:
+
+```bash
+docker run --rm --platform linux/amd64 debian:bookworm-slim \
+  sh -lc 'grep -m1 flags /proc/cpuinfo | grep -qw avx2 && echo avx2=yes || echo avx2=no'
+```
+
+Então valide o despacho em runtime antes de confiar nos números de carga:
+
+```bash
+BUILD_CPU_PROFILE=haswell SIMD_REQUIRE_AVX2=1 SIMD_EXPECT_AVX2=1 ./scripts/validate-simd-container.sh
+```
+
+Os logs esperados de startup e observabilidade devem incluir `build_cpu_profile="haswell"`, `target_arch="x86_64"`, `avx2_detected=true`, `candidate_kernel=Avx2` e `centroid_kernel=Avx2`. O builder dos artefatos ainda roda pelo caminho genérico durante o build Docker; apenas o binário de runtime do servidor usa o perfil de CPU selecionado.
 
 ## Intenção do Design
 
 - Manter o caminho da requisição autocontido e somente leitura após o startup.
 - Empurrar o trabalho pesado do dataset para uma etapa offline de build.
 - Fazer padding de vetores e centróides para 16 lanes para permitir cargas SIMD simples no runtime, sem lógica de cauda para registros de 14 dimensões.
-- Preferir respostas `200` com JSON válido a expor erros do caminho de requisição.
+- Retornar `400` explícito para erros de payload do cliente e manter falhas internas de busca em requisições válidas no fallback heurístico com `200`.
 - Manter a topologia de runtime compatível com a exigência da competição de um load balancer e duas instâncias de API.
 
 [← README em português](./README.md)

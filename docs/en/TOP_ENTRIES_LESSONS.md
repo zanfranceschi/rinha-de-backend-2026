@@ -76,8 +76,9 @@ Current gap:
 Candidate changes:
 
 - Keep a generic build path for portability.
-- Add a submission-oriented build profile using explicit AVX2/FMA flags or `target-cpu=haswell`.
+- Add a submission-oriented build profile using explicit AVX2/FMA flags or `target-cpu=haswell`. Implemented as `BUILD_CPU_PROFILE=haswell`.
 - Validate on real x86_64 with `avx2_detected=true`.
+- A mid-2014 MacBook Pro with an i5-4278U can be used for AVX2 validation if `sysctl -a | grep -i avx2` shows `hw.optional.avx2_0: 1` and Docker can expose AVX2 inside a `linux/amd64` container. Big Sur may require an older Docker Desktop release or Linux installed on the machine.
 
 ## 6. Improve the Index Algorithm, Not Just Probe Count
 

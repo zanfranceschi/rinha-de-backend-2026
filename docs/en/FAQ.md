@@ -21,4 +21,5 @@
 
 - Leaving the Docker image referenced in your `docker-compose.yml` private.
 - On Mac, building Docker images that only support arm64.
+- Building a Haswell/AVX2-only image and testing it on a CPU without AVX2. Use `BUILD_CPU_PROFILE=generic` for portable local runs, and `BUILD_CPU_PROFILE=haswell` only on AVX2-capable x86_64 machines.
 - Keeping your Git repository private.

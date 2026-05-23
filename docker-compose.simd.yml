@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
       target: simd-test
       args:
+        BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
         ARTIFACT_INPUT: resources/example-references.json
         ARTIFACT_CLUSTERS: 4
         ARTIFACT_PROBES: 2
@@ -16,6 +17,7 @@ services:
       dockerfile: Dockerfile
       target: runtime
       args:
+        BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
         ARTIFACT_INPUT: resources/example-references.json
         ARTIFACT_CLUSTERS: 4
         ARTIFACT_PROBES: 2

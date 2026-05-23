@@ -19,6 +19,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
     platform: linux/amd64
     environment:
       PROBE_COUNT: "${PROBE_COUNT:-12}"
@@ -32,6 +34,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
     platform: linux/amd64
     environment:
       PROBE_COUNT: "${PROBE_COUNT:-12}"

@@ -175,6 +175,43 @@ Useful knobs:
 - `OBS_INTERVAL_SECS=5` controls the logging interval and is clamped to at least one second.
 - `RUST_LOG=debug` enables per-request degraded-path diagnostics. Keep it at the default `info` during serious p99 measurements.
 
+## Build Profiles
+
+The Docker image supports two CPU build profiles through `BUILD_CPU_PROFILE`:
+
+- `generic` is the default. It builds a portable `linux/amd64` binary and still uses runtime AVX2 dispatch when the host CPU exposes AVX2.
+- `haswell` is the submission-oriented profile. It compiles the server with `target-cpu=haswell` and explicit `+avx2,+fma,+sse4.2,+popcnt` target features.
+
+Use the Haswell profile only on AVX2-capable x86_64 machines:
+
+```bash
+BUILD_CPU_PROFILE=haswell PROBE_COUNT=6 docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build
+```
+
+For an older Intel Mac test host, verify that macOS exposes AVX2 first. For example, a mid-2014 MacBook Pro with an i5-4278U is a Haswell machine and is usable when `hw.optional.avx2_0` is `1`:
+
+```bash
+sysctl -n machdep.cpu.brand_string
+sysctl -a | grep -i avx2
+```
+
+Docker Desktop support is the practical constraint on old macOS releases such as Big Sur, not the CPU. Current Docker Desktop releases no longer support Big Sur, so use an older Docker Desktop release for an isolated benchmark machine or install Linux on the MacBook and use Docker Engine there.
+
+After Docker is installed, verify that the Linux container sees AVX2:
+
+```bash
+docker run --rm --platform linux/amd64 debian:bookworm-slim \
+  sh -lc 'grep -m1 flags /proc/cpuinfo | grep -qw avx2 && echo avx2=yes || echo avx2=no'
+```
+
+Then validate the runtime dispatch before trusting load-test numbers:
+
+```bash
+BUILD_CPU_PROFILE=haswell SIMD_REQUIRE_AVX2=1 SIMD_EXPECT_AVX2=1 ./scripts/validate-simd-container.sh
+```
+
+Expected startup and observability logs should include `build_cpu_profile="haswell"`, `target_arch="x86_64"`, `avx2_detected=true`, `candidate_kernel=Avx2`, and `centroid_kernel=Avx2`. The artifact builder still runs with the generic build path during Docker build; only the runtime server binary uses the selected CPU profile.
+
 ## Design Intent
 
 - Keep the request path self-contained and read-only after startup.

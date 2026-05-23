@@ -1,0 +1,21 @@
+services:
+  lb:
+    image: haproxy:2.9-alpine
+    command: ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+    volumes:
+      - ./lb/haproxy-uds.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./.run/sockets:/sockets
+
+  api1:
+    environment:
+      LISTEN_MODE: unix
+      BIND_SOCKET: /sockets/api1.sock
+    volumes:
+      - ./.run/sockets:/sockets
+
+  api2:
+    environment:
+      LISTEN_MODE: unix
+      BIND_SOCKET: /sockets/api2.sock
+    volumes:
+      - ./.run/sockets:/sockets

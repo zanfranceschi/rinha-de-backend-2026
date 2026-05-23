@@ -1,0 +1,6 @@
+services:
+  lb:
+    image: haproxy:2.9-alpine
+    command: ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+    volumes:
+      - ./lb/haproxy-tcp.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro

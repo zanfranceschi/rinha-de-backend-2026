@@ -150,13 +150,23 @@ If you run the test locally, a `results.json` file will be generated. If your te
       "absolute_penalty": -580.35,
       "cut_triggered": false
     },
-    "final_score": 3425.03
+    "final_score": 3425.03,
+    "raw": {
+      "p99_ms": 5.8123456,
+      "failure_rate": 0.011,
+      "error_rate_epsilon": 0.017,
+      "p99_score": 2235.8341,
+      "detection_score": 1189.2013,
+      "rate_component": 1769.5510,
+      "absolute_penalty": -580.3497,
+      "final_score": 3425.0354
+    }
   }
 }
 ```
 
 - `expected` — dataset metadata (informational).
-- `p99` — observed 99th-percentile latency, in milliseconds. Feeds the `p99_score` computation.
+- `p99` — observed 99th-percentile latency, rounded, in milliseconds. Feeds the `p99_score` computation.
 - `breakdown` — raw counts of TP, TN, FP, FN, and HTTP errors.
 - `failure_rate` — `(FP + FN + Err) / N`. If it goes above 15%, the detection cutoff triggers.
 - `weighted_errors_E` — `1·FP + 3·FN + 5·Err`. Feeds the `ε` calculation and the absolute penalty.
@@ -168,6 +178,7 @@ If you run the test locally, a `results.json` file will be generated. If your te
 - `detection_score.absolute_penalty` — just the `−β · log₁₀(1 + E)` term. Becomes `null` when the cutoff triggers.
 - `detection_score.cut_triggered` — `true` if `failure_rate > 15%` and the score dropped to −3000.
 - `final_score` — `p99_score.value + detection_score.value`. Your backend's final score.
+- `raw` — the same values without rounding, at full precision. The top-level fields (`p99`, `failure_rate`, scores, etc.) are rounded for readability; `raw` contains the exact values used in the computation.
 
 
 ## Strategies and tips

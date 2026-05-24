@@ -1,6 +1,6 @@
 # Rinha de Backend 2026 – Fraud detection via vector search!
 
-**Heads up!** This edition does not have a defined end date yet!
+**Heads up!** The final deadline for you to send your submission is **2026-06-05T23:59:59.999-03:00**! The final result will be released in the week of June 8th!
 
 ## The challenge
 
@@ -136,10 +136,6 @@ Here's a suggested reading order for this year's documentation.
 - **[SUBMISSION.md](./SUBMISSION.md)** — Step-by-step PR guide, branches (`main` and `submission`), how to open the `rinha/test` issue.
 - **[EVALUATION.md](./EVALUATION.md)** — Scoring formula, false positive/false negative/error weights, latency multiplier, how to run the test locally.
 - **[FAQ.md](./FAQ.md)** — Frequently asked questions, common pitfalls, what's allowed and what isn't.
-
----
-## Open points
-- Definition of deadlines for submissions and final results
 
 ---
 

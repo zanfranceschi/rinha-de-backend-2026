@@ -100,7 +100,7 @@ Depois que o vetor está pronto, a sua API deve:
 
 Para medir a proximidade dos vetores, os exemplos deste documento usam **distância euclidiana** com *brute force* sobre as 14 dimensões. Note que você é livre pra escolher qualquer algoritmo/técnica de busca vetorial.
 
-> **Importante!** Não é permitido usar os payloads do teste como referência ou para fazer lookup de fraudes! Os testes finais vão usar outros payloads, e fazer isso nas prévias distroce o resultado e desanima outros participantes.
+> **Importante!** Não é permitido usar os payloads do teste como referência ou para fazer lookup de fraudes! Os testes finais vão usar outros payloads, e fazer isso nas prévias distorce o resultado e desanima outros participantes.
 
 
 ## Exemplo de transação fraudulenta

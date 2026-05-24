@@ -1,6 +1,14 @@
 [
-    {
-        "id": "macedot-rinha-2026-go",
-        "repo": "https://github.com/macedot/rinha-2026-go"
-    }
+  {
+    "id": "macedot-rinha-2026-c",
+    "repo": "https://github.com/macedot/rinha-2026-c"
+  },
+  {
+    "id": "macedot-rinha-2026-go",
+    "repo": "https://github.com/macedot/rinha-2026-go"
+  },
+  {
+    "id": "macedot-rinha-2026-zig",
+    "repo": "https://github.com/macedot/rinha-2026-zig"
+  }
 ]

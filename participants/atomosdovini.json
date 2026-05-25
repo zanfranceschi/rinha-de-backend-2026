@@ -10,5 +10,9 @@
     {
         "id": "atomosdovini-rust",
         "repo": "https://github.com/atomosdovini/rinha-fraud-rust"
+    },
+    {
+        "id": "atomosdovini-vini",
+        "repo": "https://github.com/atomosdovini/rinha-vini"
     }
 ]

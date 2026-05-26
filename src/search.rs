@@ -198,19 +198,27 @@ impl SearchEngine {
     ) -> Result<()> {
         let start = self.meta.list_offsets[cluster_idx] as usize;
         let len = self.meta.list_lengths[cluster_idx] as usize;
-        for item_idx in 0..len {
-            let absolute_idx = start + item_idx;
-            let base = absolute_idx * PACKED_DIMENSIONS;
-            let candidate = self
-                .vectors
-                .get(base..base + PACKED_DIMENSIONS)
-                .ok_or_else(|| anyhow!("vector slice out of bounds"))?;
-            let label = *self
-                .labels
-                .get(absolute_idx)
-                .ok_or_else(|| anyhow!("label index out of bounds"))?;
+        let end = start
+            .checked_add(len)
+            .ok_or_else(|| anyhow!("cluster bounds overflow"))?;
+        let vector_start = start
+            .checked_mul(PACKED_DIMENSIONS)
+            .ok_or_else(|| anyhow!("vector bounds overflow"))?;
+        let vector_end = end
+            .checked_mul(PACKED_DIMENSIONS)
+            .ok_or_else(|| anyhow!("vector bounds overflow"))?;
+        let vectors = self
+            .vectors
+            .get(vector_start..vector_end)
+            .ok_or_else(|| anyhow!("vector slice out of bounds"))?;
+        let labels = self
+            .labels
+            .get(start..end)
+            .ok_or_else(|| anyhow!("label slice out of bounds"))?;
+
+        for (candidate, label) in vectors.chunks_exact(PACKED_DIMENSIONS).zip(labels.iter()) {
             let distance = (self.kernels.candidate_distance)(query, candidate);
-            top_k.insert(distance, label);
+            top_k.insert(distance, *label);
         }
         Ok(())
     }

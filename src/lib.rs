@@ -4,7 +4,6 @@ pub mod simd;
 use std::{collections::HashMap, fs, path::Path};
 
 use anyhow::{Context, Result, anyhow};
-use chrono::{Datelike, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 
 pub const DIMENSIONS: usize = 14;
@@ -13,33 +12,42 @@ pub const TOP_K: usize = 5;
 pub const ARTIFACT_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct FraudRequest {
-    pub id: String,
-    pub transaction: Transaction,
-    pub customer: Customer,
-    pub merchant: Merchant,
+pub struct FraudRequest<'a> {
+    #[serde(borrow)]
+    pub id: &'a str,
+    #[serde(borrow)]
+    pub transaction: Transaction<'a>,
+    #[serde(borrow)]
+    pub customer: Customer<'a>,
+    #[serde(borrow)]
+    pub merchant: Merchant<'a>,
     pub terminal: Terminal,
-    pub last_transaction: Option<LastTransaction>,
+    #[serde(borrow)]
+    pub last_transaction: Option<LastTransaction<'a>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct Transaction {
+pub struct Transaction<'a> {
     pub amount: f32,
     pub installments: u32,
-    pub requested_at: String,
+    #[serde(borrow)]
+    pub requested_at: &'a str,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct Customer {
+pub struct Customer<'a> {
     pub avg_amount: f32,
     pub tx_count_24h: u32,
-    pub known_merchants: Vec<String>,
+    #[serde(borrow)]
+    pub known_merchants: Vec<&'a str>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct Merchant {
-    pub id: String,
-    pub mcc: String,
+pub struct Merchant<'a> {
+    #[serde(borrow)]
+    pub id: &'a str,
+    #[serde(borrow)]
+    pub mcc: &'a str,
     pub avg_amount: f32,
 }
 
@@ -51,8 +59,9 @@ pub struct Terminal {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct LastTransaction {
-    pub timestamp: String,
+pub struct LastTransaction<'a> {
+    #[serde(borrow)]
+    pub timestamp: &'a str,
     pub km_from_current: f32,
 }
 
@@ -94,13 +103,12 @@ pub fn load_mcc_risk(path: impl AsRef<Path>) -> Result<MccRiskMap> {
 }
 
 pub fn vectorize(
-    request: &FraudRequest,
+    request: &FraudRequest<'_>,
     normalization: &Normalization,
     mcc_risk: &MccRiskMap,
 ) -> Result<[f32; DIMENSIONS]> {
-    let requested_at = chrono::DateTime::parse_from_rfc3339(&request.transaction.requested_at)
-        .with_context(|| format!("invalid requested_at {}", request.transaction.requested_at))?
-        .with_timezone(&Utc);
+    let requested_at = ParsedTimestamp::parse(&request.transaction.requested_at)
+        .with_context(|| format!("invalid requested_at {}", request.transaction.requested_at))?;
 
     let amount_vs_avg = if request.customer.avg_amount <= 0.0 {
         1.0
@@ -113,20 +121,15 @@ pub fn vectorize(
     vector[0] = clamp01(request.transaction.amount / normalization.max_amount);
     vector[1] = clamp01(request.transaction.installments as f32 / normalization.max_installments);
     vector[2] = clamp01(amount_vs_avg);
-    vector[3] = requested_at.hour() as f32 / 23.0;
-    vector[4] = requested_at.weekday().num_days_from_monday() as f32 / 6.0;
+    vector[3] = requested_at.hour as f32 / 23.0;
+    vector[4] = requested_at.weekday_from_monday as f32 / 6.0;
 
     match &request.last_transaction {
         Some(last_tx) => {
-            let last_ts = chrono::DateTime::parse_from_rfc3339(&last_tx.timestamp)
-                .with_context(|| {
-                    format!("invalid last_transaction.timestamp {}", last_tx.timestamp)
-                })?
-                .with_timezone(&Utc);
-            let minutes = requested_at
-                .signed_duration_since(last_ts)
-                .num_minutes()
-                .max(0) as f32;
+            let last_ts = ParsedTimestamp::parse(&last_tx.timestamp).with_context(|| {
+                format!("invalid last_transaction.timestamp {}", last_tx.timestamp)
+            })?;
+            let minutes = (requested_at.epoch_minutes - last_ts.epoch_minutes).max(0) as f32;
             vector[5] = clamp01(minutes / normalization.max_minutes);
             vector[6] = clamp01(last_tx.km_from_current / normalization.max_km);
         }
@@ -148,13 +151,13 @@ pub fn vectorize(
         .customer
         .known_merchants
         .iter()
-        .any(|known| known == &request.merchant.id)
+        .any(|known| *known == request.merchant.id)
     {
         0.0
     } else {
         1.0
     };
-    vector[12] = *mcc_risk.get(&request.merchant.mcc).unwrap_or(&0.5);
+    vector[12] = *mcc_risk.get(request.merchant.mcc).unwrap_or(&0.5);
     vector[13] = clamp01(request.merchant.avg_amount / normalization.max_merchant_avg_amount);
 
     Ok(vector)
@@ -224,7 +227,7 @@ pub fn deny_response() -> FraudResponse {
 }
 
 pub fn heuristic_response(
-    request: &FraudRequest,
+    request: &FraudRequest<'_>,
     normalization: &Normalization,
     mcc_risk: &MccRiskMap,
 ) -> FraudResponse {
@@ -242,7 +245,7 @@ pub fn heuristic_response(
         .customer
         .known_merchants
         .iter()
-        .any(|known| known == &request.merchant.id)
+        .any(|known| *known == request.merchant.id)
     {
         score += 0.2;
     }
@@ -255,7 +258,7 @@ pub fn heuristic_response(
     if request.terminal.km_from_home > normalization.max_km * 0.4 {
         score += 0.15;
     }
-    score += mcc_risk.get(&request.merchant.mcc).copied().unwrap_or(0.5) * 0.1;
+    score += mcc_risk.get(request.merchant.mcc).copied().unwrap_or(0.5) * 0.1;
 
     let fraud_score = score.clamp(0.0, 1.0);
     FraudResponse {
@@ -266,6 +269,93 @@ pub fn heuristic_response(
 
 pub fn clamp01(value: f32) -> f32 {
     value.clamp(0.0, 1.0)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ParsedTimestamp {
+    hour: u32,
+    weekday_from_monday: u32,
+    epoch_minutes: i64,
+}
+
+impl ParsedTimestamp {
+    fn parse(raw: &str) -> Result<Self> {
+        let bytes = raw.as_bytes();
+        if bytes.len() != 20
+            || bytes[4] != b'-'
+            || bytes[7] != b'-'
+            || bytes[10] != b'T'
+            || bytes[13] != b':'
+            || bytes[16] != b':'
+            || bytes[19] != b'Z'
+        {
+            return Err(anyhow!("expected UTC timestamp YYYY-MM-DDTHH:MM:SSZ"));
+        }
+
+        let year = parse_digits(bytes, 0, 4)? as i32;
+        let month = parse_digits(bytes, 5, 2)? as u32;
+        let day = parse_digits(bytes, 8, 2)? as u32;
+        let hour = parse_digits(bytes, 11, 2)? as u32;
+        let minute = parse_digits(bytes, 14, 2)? as u32;
+        let second = parse_digits(bytes, 17, 2)? as u32;
+
+        if !(1..=12).contains(&month)
+            || day == 0
+            || day > days_in_month(year, month)
+            || hour > 23
+            || minute > 59
+            || second > 59
+        {
+            return Err(anyhow!("timestamp component out of range"));
+        }
+
+        let days = days_from_civil(year, month, day);
+        Ok(Self {
+            hour,
+            weekday_from_monday: weekday_from_days(days),
+            epoch_minutes: days * 1_440 + (hour as i64) * 60 + minute as i64,
+        })
+    }
+}
+
+fn parse_digits(bytes: &[u8], start: usize, len: usize) -> Result<u32> {
+    let mut value = 0_u32;
+    for byte in &bytes[start..start + len] {
+        if !byte.is_ascii_digit() {
+            return Err(anyhow!("non-digit timestamp component"));
+        }
+        value = value * 10 + (byte - b'0') as u32;
+    }
+    Ok(value)
+}
+
+fn days_in_month(year: i32, month: u32) -> u32 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if is_leap_year(year) => 29,
+        2 => 28,
+        _ => 0,
+    }
+}
+
+fn is_leap_year(year: i32) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+}
+
+fn days_from_civil(year: i32, month: u32, day: u32) -> i64 {
+    let year = year - i32::from(month <= 2);
+    let era = if year >= 0 { year } else { year - 399 } / 400;
+    let yoe = year - era * 400;
+    let month = month as i32;
+    let day = day as i32;
+    let doy = (153 * (month + if month > 2 { -3 } else { 9 }) + 2) / 5 + day - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    (era * 146_097 + doe - 719_468) as i64
+}
+
+fn weekday_from_days(days_since_epoch: i64) -> u32 {
+    (days_since_epoch + 3).rem_euclid(7) as u32
 }
 
 pub fn validate_reference_record(record: &ReferenceRecord) -> Result<()> {
@@ -347,6 +437,83 @@ mod tests {
         for (left, right) in vector.iter().zip(expected.iter()) {
             approx_eq(*left, *right);
         }
+    }
+
+    #[test]
+    fn timestamp_parser_extracts_weekday_and_minutes() {
+        let timestamp = ParsedTimestamp::parse("2026-03-11T18:45:53Z").unwrap();
+        assert_eq!(timestamp.hour, 18);
+        assert_eq!(timestamp.weekday_from_monday, 2);
+
+        let epoch = ParsedTimestamp::parse("1970-01-01T00:00:00Z").unwrap();
+        assert_eq!(epoch.weekday_from_monday, 3);
+        assert_eq!(epoch.epoch_minutes, 0);
+
+        let leap_day = ParsedTimestamp::parse("2024-02-29T23:59:59Z").unwrap();
+        assert_eq!(leap_day.weekday_from_monday, 3);
+    }
+
+    #[test]
+    fn timestamp_parser_rejects_malformed_or_out_of_range_values() {
+        assert!(ParsedTimestamp::parse("2026-03-11T18:45:53+00:00").is_err());
+        assert!(ParsedTimestamp::parse("2026-02-29T18:45:53Z").is_err());
+        assert!(ParsedTimestamp::parse("2026-03-11T24:00:00Z").is_err());
+        assert!(ParsedTimestamp::parse("2026-03-11T18:60:00Z").is_err());
+        assert!(ParsedTimestamp::parse("2026-03-11T18:45:60Z").is_err());
+    }
+
+    #[test]
+    fn vectorize_clamps_negative_elapsed_minutes() {
+        let request: FraudRequest = serde_json::from_str(
+            r#"{
+                "id": "tx-future-last",
+                "transaction": { "amount": 100.0, "installments": 1, "requested_at": "2026-03-11T18:45:53Z" },
+                "customer": { "avg_amount": 100.0, "tx_count_24h": 1, "known_merchants": ["MERC-016"] },
+                "merchant": { "id": "MERC-016", "mcc": "5411", "avg_amount": 60.25 },
+                "terminal": { "is_online": false, "card_present": true, "km_from_home": 10.0 },
+                "last_transaction": { "timestamp": "2026-03-11T18:46:53Z", "km_from_current": 15.0 }
+            }"#,
+        )
+        .unwrap();
+
+        let vector = vectorize(&request, &test_normalization(), &test_mcc()).unwrap();
+        approx_eq(vector[5], 0.0);
+        approx_eq(vector[6], 0.015);
+    }
+
+    #[test]
+    fn vectorize_rejects_malformed_timestamp() {
+        let request: FraudRequest = serde_json::from_str(
+            r#"{
+                "id": "tx-bad-time",
+                "transaction": { "amount": 100.0, "installments": 1, "requested_at": "2026-03-11 18:45:53" },
+                "customer": { "avg_amount": 100.0, "tx_count_24h": 1, "known_merchants": ["MERC-016"] },
+                "merchant": { "id": "MERC-016", "mcc": "5411", "avg_amount": 60.25 },
+                "terminal": { "is_online": false, "card_present": true, "km_from_home": 10.0 },
+                "last_transaction": null
+            }"#,
+        )
+        .unwrap();
+
+        assert!(vectorize(&request, &test_normalization(), &test_mcc()).is_err());
+    }
+
+    #[test]
+    fn request_deserialization_uses_borrowed_hot_path_strings() {
+        let raw = br#"{
+            "id": "tx-borrowed",
+            "transaction": { "amount": 41.12, "installments": 2, "requested_at": "2026-03-11T18:45:53Z" },
+            "customer": { "avg_amount": 82.24, "tx_count_24h": 3, "known_merchants": ["MERC-003", "MERC-016"] },
+            "merchant": { "id": "MERC-016", "mcc": "5411", "avg_amount": 60.25 },
+            "terminal": { "is_online": false, "card_present": true, "km_from_home": 29.23 },
+            "last_transaction": null
+        }"#;
+        let request: FraudRequest<'_> = serde_json::from_slice(raw).unwrap();
+
+        assert_eq!(request.id, "tx-borrowed");
+        assert_eq!(request.transaction.requested_at, "2026-03-11T18:45:53Z");
+        assert_eq!(request.customer.known_merchants[0], "MERC-003");
+        assert_eq!(request.merchant.id, "MERC-016");
     }
 
     #[test]

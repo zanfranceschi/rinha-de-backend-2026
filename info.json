@@ -1,0 +1,7 @@
+{
+    "participants": ["rwebler"],
+    "social": ["https://github.com/rwebler"],
+    "source-code-repo": "https://github.com/rwebler/rinha-de-backend-2026",
+    "stack": ["rust", "custom-lb"],
+    "open_to_work": false
+}

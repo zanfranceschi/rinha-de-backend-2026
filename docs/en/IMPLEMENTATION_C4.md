@@ -5,9 +5,11 @@ This document describes the current Rust implementation added in this repository
 Relevant source files:
 
 - [`docker-compose.yml`](../../docker-compose.yml)
+- [`docker-compose.lb-custom.yml`](../../docker-compose.lb-custom.yml)
 - [`lb/nginx.conf`](../../lb/nginx.conf)
 - [`lb/haproxy-tcp.cfg`](../../lb/haproxy-tcp.cfg)
 - [`lb/haproxy-uds.cfg`](../../lb/haproxy-uds.cfg)
+- [`src/bin/lb.rs`](../../src/bin/lb.rs)
 - [`src/bin/server.rs`](../../src/bin/server.rs)
 - [`src/lib.rs`](../../src/lib.rs)
 - [`src/search.rs`](../../src/search.rs)
@@ -62,7 +64,7 @@ flowchart LR
 ### Notes
 
 - The load balancer performs no business logic. It only forwards requests to the two upstream API containers.
-- The default root compose file uses nginx. Overlay compose files can swap the adapter to HAProxy over TCP or HAProxy over Unix sockets without changing API code or load-test scripts.
+- The default root compose file uses nginx. Overlay compose files can swap the adapter to HAProxy over TCP, HAProxy over Unix sockets, or the custom Rust LB (`docker-compose.lb-custom.yml`) without changing API code or load-test scripts.
 - Each API instance loads the same read-only artifact set and answers requests independently.
 - The API containers do not depend on an external database, cache, or vector store in the hot path.
 
@@ -175,9 +177,10 @@ sequenceDiagram
 
 The API exposes a stable upstream contract:
 
-- `LISTEN_MODE=tcp|unix`, default `tcp`.
+- `LISTEN_MODE=tcp|unix|fd`, default `tcp`.
 - `BIND_ADDR=0.0.0.0:9999` in TCP mode.
 - `BIND_SOCKET=/sockets/apiN.sock` in Unix-socket mode.
+- `FD_SOCKET=/sockets/apiN.ctrl` in fd-passing mode (SCM_RIGHTS, used by the custom LB).
 
 The client-facing contract remains unchanged: the stack still exposes `GET /ready` and `POST /fraud-score` on host port `9999`. See [LOAD_BALANCER_VARIANTS.md](./LOAD_BALANCER_VARIANTS.md) for the exact commands and comparison workflow.
 

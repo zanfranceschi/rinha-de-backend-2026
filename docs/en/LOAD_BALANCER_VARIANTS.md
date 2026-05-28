@@ -2,9 +2,10 @@
 
 The root `docker-compose.yml` keeps nginx as the default submission-friendly load balancer. The API replicas expose a stable upstream contract so the `lb` service can be replaced with compose overlays:
 
-- `LISTEN_MODE=tcp|unix`, default `tcp`.
+- `LISTEN_MODE=tcp|unix|fd`, default `tcp`.
 - `BIND_ADDR=0.0.0.0:9999` for TCP upstreams.
 - `BIND_SOCKET=/sockets/apiN.sock` for Unix-socket upstreams.
+- `FD_SOCKET=/sockets/apiN.ctrl` for SCM_RIGHTS fd-passing mode (used by the custom LB).
 
 The external client contract does not change. Clients still call `GET /ready` and `POST /fraud-score` on host port `9999`, and k6 can keep using the same `BASE_URL`.
 
@@ -45,7 +46,7 @@ Custom minimal L4 UDS round-robin (Step 2):
 ./scripts/run-lb-variant.sh custom
 ```
 
-This variant builds the tiny custom `lb` binary (src/bin/lb.rs) and uses the `lb-runtime` stage. It performs pure TCP→Unix socket byte forwarding with simple round-robin. No HTTP proxy overhead. APIs must listen on Unix sockets (`LISTEN_MODE=unix`). The `.run/sockets` directory is still used for the shared volume.
+This variant builds the tiny custom `lb` binary (`src/bin/lb.rs`) and uses the `lb-runtime` stage. It uses SCM_RIGHTS fd-passing over persistent UDS control sockets: the LB accepts each TCP connection then hands the raw fd to an API worker via `sendmsg(SCM_RIGHTS)`. Zero request/response bytes flow through the LB process. APIs must use fd-passing mode (`LISTEN_MODE=fd`). The `.run/sockets` directory is still used for the shared volume.
 
 ## Comparison workflow
 

@@ -5,9 +5,11 @@ Este documento descreve a implementação Rust atual adicionada neste repositór
 Arquivos relevantes:
 
 - [`docker-compose.yml`](../../docker-compose.yml)
+- [`docker-compose.lb-custom.yml`](../../docker-compose.lb-custom.yml)
 - [`lb/nginx.conf`](../../lb/nginx.conf)
 - [`lb/haproxy-tcp.cfg`](../../lb/haproxy-tcp.cfg)
 - [`lb/haproxy-uds.cfg`](../../lb/haproxy-uds.cfg)
+- [`src/bin/lb.rs`](../../src/bin/lb.rs)
 - [`src/bin/server.rs`](../../src/bin/server.rs)
 - [`src/lib.rs`](../../src/lib.rs)
 - [`src/search.rs`](../../src/search.rs)
@@ -62,7 +64,7 @@ flowchart LR
 ### Notas
 
 - O load balancer não executa lógica de negócio. Ele apenas encaminha requisições para as duas instâncias upstream.
-- O compose raiz usa nginx por padrão. Overlays de compose podem trocar o adaptador para HAProxy sobre TCP ou HAProxy sobre Unix sockets sem alterar o código da API ou os scripts de carga.
+- O compose raiz usa nginx por padrão. Overlays de compose podem trocar o adaptador para HAProxy sobre TCP, HAProxy sobre Unix sockets, ou o LB Rust customizado (`docker-compose.lb-custom.yml`) sem alterar o código da API ou os scripts de carga.
 - Cada instância da API carrega o mesmo conjunto de artefatos read-only e responde de forma independente.
 - As instâncias da API não dependem de banco externo, cache ou vector store no hot path.
 
@@ -175,9 +177,10 @@ sequenceDiagram
 
 A API expõe um contrato estável de upstream:
 
-- `LISTEN_MODE=tcp|unix`, padrão `tcp`.
+- `LISTEN_MODE=tcp|unix|fd`, padrão `tcp`.
 - `BIND_ADDR=0.0.0.0:9999` no modo TCP.
 - `BIND_SOCKET=/sockets/apiN.sock` no modo Unix socket.
+- `FD_SOCKET=/sockets/apiN.ctrl` no modo fd-passing (SCM_RIGHTS, usado pelo LB customizado).
 
 O contrato visto pelo cliente não muda: a stack continua expondo `GET /ready` e `POST /fraud-score` na porta `9999` do host.
 

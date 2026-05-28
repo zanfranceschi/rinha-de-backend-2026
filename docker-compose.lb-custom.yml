@@ -1,0 +1,86 @@
+# docker-compose.lb-custom.yml
+#
+# Step 2 custom L4 load balancer (minimal round-robin TCP→UDS byte pipe).
+# Replaces nginx/HAProxy for the data path.
+#
+# Usage (from project root):
+#   docker compose -f docker-compose.yml -f docker-compose.lb-custom.yml up --build
+#
+# The custom LB binary is built from the same source (src/bin/lb.rs) and
+# produces a very small runtime image (lb-runtime stage in the Dockerfile).
+#
+# APIs listen on Unix sockets via the existing LISTEN_MODE=unix support.
+# A shared bind-mounted directory carries the sockets.
+
+x-api-fd: &api-fd
+  build:
+    context: .
+    dockerfile: Dockerfile
+    target: runtime
+    args:
+      BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
+  platform: linux/amd64
+  environment:
+    LISTEN_MODE: fd
+    FD_SOCKET: /sockets/api.ctrl   # overridden per service
+    PROBE_COUNT: "${PROBE_COUNT:-20}"
+    ADAPTIVE_INITIAL_PROBES: "${ADAPTIVE_INITIAL_PROBES:-6}"
+  volumes:
+    - sockets:/sockets
+  deploy:
+    resources:
+      limits:
+        cpus: "0.42"
+        memory: "155MB"
+
+services:
+  lb:
+    image: rinha-de-backend-2026-lb-custom:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: lb-runtime
+      args:
+        BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
+    platform: linux/amd64
+    command: ["/app/lb"]
+    environment:
+      LB_LISTEN: 0.0.0.0:9999
+      FD_UPSTREAMS: /sockets/api1.ctrl,/sockets/api2.ctrl
+      LB_WORKERS: "2"
+    ports:
+      - "9999:9999"
+    volumes:
+      - sockets:/sockets
+    depends_on:
+      - api1
+      - api2
+    deploy:
+      resources:
+        limits:
+          cpus: "0.08"
+          memory: "12MB"
+
+  api1:
+    <<: *api-fd
+    environment:
+      LISTEN_MODE: fd
+      FD_SOCKET: /sockets/api1.ctrl
+      PROBE_COUNT: "${PROBE_COUNT:-12}"
+      BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
+
+  api2:
+    <<: *api-fd
+    environment:
+      LISTEN_MODE: fd
+      FD_SOCKET: /sockets/api2.ctrl
+      PROBE_COUNT: "${PROBE_COUNT:-12}"
+      BUILD_CPU_PROFILE: "${BUILD_CPU_PROFILE:-generic}"
+
+volumes:
+  sockets:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${SOCKET_DIR:-./.run/sockets}

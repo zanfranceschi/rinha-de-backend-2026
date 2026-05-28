@@ -36,7 +36,7 @@ export const options = {
             maxVUs: 250,
             gracefulStop: '10s',
             stages: [
-                { duration: '120s', target: 900 },
+                { duration: '120s', target: 901 },
             ],
         },
     },
@@ -100,8 +100,12 @@ export function handleSummary(data) {
     const fp = data.metrics.fp_count ? data.metrics.fp_count.values.count : 0;
     const fn = data.metrics.fn_count ? data.metrics.fn_count.values.count : 0;
     const errs = data.metrics.error_count ? data.metrics.error_count.values.count : 0;
+    const droppedIterations = data.metrics.dropped_iterations
+        ? data.metrics.dropped_iterations.values.count
+        : 0;
 
     const N = tp + tn + fp + fn + errs;
+    const missing = Math.max(0, expectedStats.total - N);
 
     // Erros ponderados (para a fórmula log) e contagem pura (para o corte)
     const E = (fp * 1) + (fn * 3) + (errs * 5);
@@ -142,6 +146,9 @@ export function handleSummary(data) {
         expected: expectedStats,
         p99: p99.toFixed(2) + 'ms',
         scoring: {
+            actual_total: N,
+            missing_requests: missing,
+            dropped_iterations: droppedIterations,
             breakdown: {
                 false_positive_detections: fp,
                 false_negative_detections: fn,

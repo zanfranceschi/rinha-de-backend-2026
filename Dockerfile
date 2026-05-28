@@ -35,6 +35,10 @@ RUN set -eux; \
     cargo build --release --bin server; \
     if [ "${BUILD_CPU_PROFILE}" = "haswell" ]; then \
         cp target/x86_64-unknown-linux-gnu/release/server target/release/server; \
+    fi; \
+    cargo build --release --bin lb; \
+    if [ "${BUILD_CPU_PROFILE}" = "haswell" ]; then \
+        cp target/x86_64-unknown-linux-gnu/release/lb target/release/lb; \
     fi
 
 FROM builder AS simd-test
@@ -66,3 +70,39 @@ ENV MCC_RISK_PATH=/app/resources/mcc_risk.json
 ENV BUILD_CPU_PROFILE=${BUILD_CPU_PROFILE}
 
 CMD ["/app/server"]
+
+# --------------------------------------------------------------------
+# Minimal runtime image for the custom L4 UDS round-robin load balancer.
+# This stage produces a tiny container that only contains the lb binary.
+# Intended for use with API instances listening on Unix sockets
+# (LISTEN_MODE=unix + BIND_SOCKET).
+#
+# The LB does pure TCP→UDS byte piping with round-robin and no HTTP
+# awareness / no business logic. It is the Step 2 replacement for nginx.
+# --------------------------------------------------------------------
+FROM --platform=linux/amd64 debian:bookworm-slim AS lb-runtime
+WORKDIR /app
+
+ARG BUILD_CPU_PROFILE=generic
+
+RUN useradd -r -u 10002 lbuser && \
+    mkdir -p /sockets && \
+    chown -R lbuser:lbuser /sockets /app
+
+COPY --from=builder /app/target/release/lb /app/lb
+
+RUN chown lbuser:lbuser /app/lb && chmod 755 /app/lb
+
+USER lbuser
+
+EXPOSE 9999
+
+# Defaults assume the standard .run/sockets layout used by the HAProxy UDS variant.
+# Override via environment when launching.
+ENV LB_LISTEN=0.0.0.0:9999
+ENV BACKENDS=/sockets/api1.sock,/sockets/api2.sock
+ENV BUILD_CPU_PROFILE=${BUILD_CPU_PROFILE}
+
+# The LB itself has no /ready endpoint (it is a pure forwarder).
+# Health is implicit: if it can accept TCP and the backends eventually appear, it works.
+CMD ["/app/lb"]

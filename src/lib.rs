@@ -214,7 +214,7 @@ pub fn score_neighbors(labels: &[u8]) -> FraudResponse {
     let fraud_count = labels.iter().filter(|label| **label == 1).count();
     let fraud_score = fraud_count as f32 / TOP_K as f32;
     FraudResponse {
-        approved: fraud_score < 0.6,
+        approved: fraud_count <= 2,
         fraud_score,
     }
 }
@@ -546,6 +546,28 @@ mod tests {
             FraudResponse {
                 approved: false,
                 fraud_score: 0.6
+            }
+        );
+    }
+
+    #[test]
+    fn scores_two_fraud_as_approved() {
+        assert_eq!(
+            score_neighbors(&[1, 1, 0, 0, 0]),
+            FraudResponse {
+                approved: true,
+                fraud_score: 0.4
+            }
+        );
+    }
+
+    #[test]
+    fn scores_one_fraud_as_approved() {
+        assert_eq!(
+            score_neighbors(&[1, 0, 0, 0, 0]),
+            FraudResponse {
+                approved: true,
+                fraud_score: 0.2
             }
         );
     }

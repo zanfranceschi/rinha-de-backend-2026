@@ -29,6 +29,7 @@ pub struct ArtifactMeta {
 
 pub struct SearchEngine {
     pub meta: ArtifactMeta,
+    adaptive_config: AdaptiveProbeConfig,
     centroids: Vec<[f32; PACKED_DIMENSIONS]>,
     vectors: Mmap,
     labels: Mmap,
@@ -51,6 +52,12 @@ struct ClusterCandidate {
 struct TopK {
     entries: [Neighbor; TOP_K],
     len: usize,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct AdaptiveProbeConfig {
+    enabled: bool,
+    initial_probe_count: usize,
 }
 
 impl TopK {
@@ -90,6 +97,45 @@ impl TopK {
         }
         labels
     }
+
+    fn fraud_count(&self) -> usize {
+        self.entries[..self.len]
+            .iter()
+            .filter(|entry| entry.label == 1)
+            .count()
+    }
+
+    fn should_widen(&self) -> bool {
+        if self.len < TOP_K {
+            return true;
+        }
+
+        matches!(self.fraud_count(), 2 | 3)
+    }
+}
+
+impl AdaptiveProbeConfig {
+    fn from_env(max_probe_count: usize) -> Self {
+        Self::from_values(
+            env_flag("ADAPTIVE_PROBING", true),
+            env_usize("ADAPTIVE_INITIAL_PROBES", 4),
+            max_probe_count,
+        )
+    }
+
+    fn from_values(enabled: bool, initial_probe_count: usize, max_probe_count: usize) -> Self {
+        let max_probe_count = max_probe_count.max(1);
+        let initial_probe_count = if enabled {
+            initial_probe_count.max(1).min(max_probe_count)
+        } else {
+            max_probe_count
+        };
+
+        Self {
+            enabled,
+            initial_probe_count,
+        }
+    }
 }
 
 impl SearchEngine {
@@ -104,6 +150,7 @@ impl SearchEngine {
         }
 
         validate_meta(&meta)?;
+        let adaptive_config = AdaptiveProbeConfig::from_env(meta.probe_count);
 
         let centroids = load_centroids(&dir.join("centroids.bin"), meta.cluster_count)?;
         let vectors_file = File::open(dir.join("vectors.bin"))
@@ -133,6 +180,7 @@ impl SearchEngine {
 
         Ok(Self {
             meta,
+            adaptive_config,
             centroids,
             vectors,
             labels,
@@ -145,10 +193,27 @@ impl SearchEngine {
         let quantized = quantize_vector_padded(query);
         let padded_query = pad_centroid(query);
         let ranked_clusters = self.select_probe_clusters(&padded_query);
+        let initial_probe_count = self
+            .adaptive_config
+            .initial_probe_count
+            .min(ranked_clusters.len());
 
         let mut top_k = TopK::new();
-        for cluster_idx in ranked_clusters {
-            self.scan_cluster(cluster_idx, &quantized, &mut top_k)?;
+        self.scan_clusters(
+            &ranked_clusters[..initial_probe_count],
+            &quantized,
+            &mut top_k,
+        )?;
+
+        if self.adaptive_config.enabled
+            && top_k.should_widen()
+            && initial_probe_count < ranked_clusters.len()
+        {
+            self.scan_clusters(
+                &ranked_clusters[initial_probe_count..],
+                &quantized,
+                &mut top_k,
+            )?;
         }
 
         if top_k.len < TOP_K {
@@ -170,6 +235,14 @@ impl SearchEngine {
         self.kernels.centroid_mode
     }
 
+    pub fn adaptive_probing_enabled(&self) -> bool {
+        self.adaptive_config.enabled
+    }
+
+    pub fn initial_probe_count(&self) -> usize {
+        self.adaptive_config.initial_probe_count
+    }
+
     pub fn lock_artifacts(&self) -> Result<()> {
         self.vectors.lock().context("failed to mlock vectors.bin")?;
         self.labels.lock().context("failed to mlock labels.bin")
@@ -188,6 +261,18 @@ impl SearchEngine {
         }
 
         top.into_iter().map(|candidate| candidate.index).collect()
+    }
+
+    fn scan_clusters(
+        &self,
+        cluster_indices: &[usize],
+        query: &[i8; PACKED_DIMENSIONS],
+        top_k: &mut TopK,
+    ) -> Result<()> {
+        for cluster_idx in cluster_indices {
+            self.scan_cluster(*cluster_idx, query, top_k)?;
+        }
+        Ok(())
     }
 
     fn scan_cluster(
@@ -293,6 +378,13 @@ fn env_flag(key: &str, default: bool) -> bool {
         .unwrap_or(default)
 }
 
+fn env_usize(key: &str, default: usize) -> usize {
+    env::var(key)
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(default)
+}
+
 fn validate_meta(meta: &ArtifactMeta) -> Result<()> {
     if meta.version != ARTIFACT_VERSION {
         return Err(anyhow!(
@@ -387,6 +479,63 @@ mod tests {
 
         let labels = top_k.labels();
         assert_eq!(labels.iter().filter(|label| **label == 1).count(), 4);
+    }
+
+    #[test]
+    fn top_k_widens_when_incomplete() {
+        let mut top_k = TopK::new();
+        top_k.insert(10, 1);
+        top_k.insert(20, 0);
+
+        assert!(top_k.should_widen());
+    }
+
+    #[test]
+    fn top_k_widens_only_on_ambiguous_votes() {
+        for (labels, should_widen) in [
+            ([0, 0, 0, 0, 0], false), // 0 fraud → confident approve
+            ([1, 0, 0, 0, 0], false), // 1 fraud → confident approve
+            ([1, 1, 0, 0, 0], true),  // 2 fraud → boundary, widen
+            ([1, 1, 1, 0, 0], true),  // 3 fraud → boundary, widen
+            ([1, 1, 1, 1, 0], false), // 4 fraud → confident deny
+            ([1, 1, 1, 1, 1], false), // 5 fraud → confident deny
+        ] {
+            let mut top_k = TopK::new();
+            for (idx, label) in labels.iter().enumerate() {
+                top_k.insert(idx as u32, *label);
+            }
+
+            assert_eq!(
+                top_k.fraud_count(),
+                labels.iter().filter(|label| **label == 1).count()
+            );
+            assert_eq!(top_k.should_widen(), should_widen, "labels={labels:?}");
+        }
+    }
+
+    #[test]
+    fn adaptive_probe_config_clamps_initial_count() {
+        assert_eq!(
+            AdaptiveProbeConfig::from_values(true, 0, 6),
+            AdaptiveProbeConfig {
+                enabled: true,
+                initial_probe_count: 1
+            }
+        );
+        assert_eq!(
+            AdaptiveProbeConfig::from_values(true, 99, 6),
+            AdaptiveProbeConfig {
+                enabled: true,
+                initial_probe_count: 6
+            }
+        );
+        assert_eq!(
+            AdaptiveProbeConfig::from_values(false, 2, 6),
+            AdaptiveProbeConfig {
+                enabled: false,
+                initial_probe_count: 6
+            }
+        );
     }
 
     #[test]

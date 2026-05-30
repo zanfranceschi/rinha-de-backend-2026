@@ -2,5 +2,9 @@
   {
     "id": "abeswz-rust",
     "repo": "https://github.com/abeswz/rinha-backend-2026-rust"
+  },
+  {
+    "id": "abeswz-gopher",
+    "repo": "https://github.com/abeswz/gopher-fraud-detection"
   }
 ]

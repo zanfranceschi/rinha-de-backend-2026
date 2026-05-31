@@ -89,7 +89,6 @@ export function handleSummary(data) {
     const TX_CORTE = 0.15;
     const SCORE_P99_CORTE = -3000;
     const SCORE_DET_CORTE = -3000;
-    const PRECISION = __ENV.SCORE_PRECISION ? parseInt(__ENV.SCORE_PRECISION) : 2;
 
     const r = (v, decimals) => +v.toFixed(decimals);
 
@@ -141,7 +140,7 @@ export function handleSummary(data) {
 
     const result = {
         expected: expectedStats,
-        p99: r(p99, PRECISION) + 'ms',
+        p99: p99,
         scoring: {
             breakdown: {
                 false_positive_detections: fp,
@@ -150,30 +149,20 @@ export function handleSummary(data) {
                 true_negative_detections: tn,
                 http_errors: errs,
             },
-            failure_rate: r(failureRate * 100, PRECISION) + '%',
+            failure_rate: failureRate,
             weighted_errors_E: E,
-            error_rate_epsilon: r(epsilon, PRECISION + 4),
+            error_rate_epsilon: epsilon,
             p99_score: {
-                value: r(p99Score, PRECISION),
+                value: p99Score,
                 cut_triggered: p99CutTriggered,
             },
             detection_score: {
-                value: r(detScore, PRECISION),
-                rate_component: cutTriggered ? null : r(rateComponent, PRECISION),
-                absolute_penalty: cutTriggered ? null : r(absolutePenalty, PRECISION),
-                cut_triggered: cutTriggered,
-            },
-            final_score: r(finalScore, PRECISION),
-            raw: {
-                p99_ms: p99,
-                failure_rate: failureRate,
-                error_rate_epsilon: epsilon,
-                p99_score: p99Score,
-                detection_score: detScore,
+                value: detScore,
                 rate_component: cutTriggered ? null : rateComponent,
                 absolute_penalty: cutTriggered ? null : absolutePenalty,
-                final_score: finalScore,
+                cut_triggered: cutTriggered,
             },
+            final_score: finalScore
         },
     };
 

@@ -128,7 +128,7 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se o 
 ```json
 {
   "expected": { "total": 5000, "fraud_count": 1750, "fraud_rate": 35, ... },
-  "p99": "5.81ms",
+  "p99": "5.81",
   "scoring": {
     "breakdown": {
       "true_positive_detections":  1735,
@@ -150,17 +150,7 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se o 
       "absolute_penalty": -580.35,
       "cut_triggered": false
     },
-    "final_score": 3425.03,
-    "raw": {
-      "p99_ms": 5.8123456,
-      "failure_rate": 0.011,
-      "error_rate_epsilon": 0.017,
-      "p99_score": 2235.8341,
-      "detection_score": 1189.2013,
-      "rate_component": 1769.5510,
-      "absolute_penalty": -580.3497,
-      "final_score": 3425.0354
-    }
+    "final_score": 3425.03
   }
 }
 ```
@@ -178,8 +168,6 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se o 
 - `detection_score.absolute_penalty` — só o termo `−β · log₁₀(1 + E)`. Fica `null` quando o corte dispara.
 - `detection_score.cut_triggered` — `true` se `failure_rate > 15%` e o score caiu para −3000.
 - `final_score` — `p99_score.value + detection_score.value`. É a pontuação final do seu backend.
-- `raw` — os mesmos valores sem arredondamento, com precisão total. Os campos de nível superior (`p99`, `failure_rate`, scores, etc.) são arredondados para facilitar a leitura; `raw` contém os valores exatos usados na computação.
-
 
 ## Estratégias e dicas
 

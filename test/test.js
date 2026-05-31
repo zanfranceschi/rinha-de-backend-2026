@@ -149,7 +149,7 @@ export function handleSummary(data) {
                 true_negative_detections: tn,
                 http_errors: errs,
             },
-            failure_rate: failureRate,
+            failure_rate: Math.round(failureRate * 1_000_000) / 1_000_000,
             weighted_errors_E: E,
             error_rate_epsilon: epsilon,
             p99_score: {

@@ -1,5 +1,6 @@
-{
-  "repos": [
-    "https://github.com/dev-mariana/rinha-backend-2026"
-  ]
-}
+[
+    {
+        "id": "dev-mariana",
+        "repo": "https://github.com/dev-mariana/rinha-backend-2026"
+    }
+]

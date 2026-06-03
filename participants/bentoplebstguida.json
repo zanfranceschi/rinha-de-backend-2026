@@ -1,0 +1,14 @@
+{
+  "name": "Bento",
+  "github": "bentoplebstguida",
+  "repositories": {
+    "source": "https://github.com/bentoplebstguida/rinha-de-backend-2026",
+    "submission": "https://github.com/bentoplebstguida/rinha-de-backend-2026/tree/IaSlop"
+  },
+  "stack": {
+    "language": "Go",
+    "load_balancer": "nginx:alpine",
+    "image": "docker.io/library/rinha-de-backend-2026-api1:latest"
+  },
+  "notes": "Submissão oficial Rinha 2026. Branch IaSlop no commit dc01322. Classificador determinístico por árvore binária embutida em Go, nginx tunado como LB."
+}

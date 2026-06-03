@@ -6,5 +6,9 @@
   {
     "id": "fksegundo-dotnet",
     "repo": "https://github.com/fksegundo/rinha-dotnet"
+  },
+  {
+    "id": "fksegundo-rust-tree",
+    "repo": "https://github.com/fksegundo/rinha-rust-tree"
   }
 ]

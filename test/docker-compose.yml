@@ -1,0 +1,40 @@
+services:
+  k6:
+    image: grafana/k6:latest
+    user: root
+    environment:
+      - K6_NO_USAGE_REPORT=true
+    volumes:
+      - .:/test
+    working_dir: /test
+    command: run /test/test.js
+    network_mode: "host"
+    profiles:
+      - test
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 8G
+    storage_opt:
+      size: "1T"
+
+  k6-smoke:
+    image: grafana/k6:latest
+    user: root
+    environment:
+      - K6_NO_USAGE_REPORT=true
+    volumes:
+      - .:/test
+    working_dir: /test
+    command: run /test/smoke.js
+    network_mode: "host"
+    profiles:
+      - smoke
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 8G
+    storage_opt:
+      size: "1T"

@@ -1,6 +1,6 @@
 # Rinha de Backend 2026 – Detecção de fraude por busca vetorial!
 
-**Atenção!** Esta edição ainda não tem data de término definida!
+**Atenção!** O prazo final para você pode mandar sua submissão é até **2026-06-05T23:59:59.999-03:00**! O resultado final saí na semana do dia 8 de Junho!
 
 ## O desafio
 
@@ -58,7 +58,7 @@ Para cada transação, a sua API deve:
 
 As 14 dimensões, as fórmulas de normalização e as constantes estão em [REGRAS_DE_DETECCAO.md](./REGRAS_DE_DETECCAO.md). Se você nunca trabalhou com busca vetorial, comece por [BUSCA_VETORIAL.md](./BUSCA_VETORIAL.md).
 
-> **Importante!** Não é permitido usar os payloads do teste como referência ou para fazer lookup de fraudes! Os testes finais vão usar outros payloads, e fazer isso nas prévias distroce o resultado e desanima outros participantes.
+> **Importante!** Não é permitido usar os payloads do teste como referência ou para fazer lookup de fraudes! Os testes finais vão usar outros payloads, e fazer isso nas prévias distorce o resultado e desanima outros participantes.
 
 ## Arquivos de referência
 
@@ -136,10 +136,6 @@ Aqui está uma sugestão de ordem para leitura da documentação da edição des
 - **[SUBMISSAO.md](./SUBMISSAO.md)** — Passo-a-passo do PR, branches (`main` e `submission`), como abrir a issue `rinha/test`.
 - **[AVALIACAO.md](./AVALIACAO.md)** — Fórmula de pontuação, peso de falso positivo/falso negativo/erro, multiplicador de latência, como rodar o teste local.
 - **[FAQ.md](./FAQ.md)** — Dúvidas recorrentes, armadilhas comuns, o que pode e não pode.
-
----
-## Pontos em aberto
-- Definição de datas de encerramento para submissões e resultados finais
 
 ---
 

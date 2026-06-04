@@ -8,6 +8,11 @@ O teste de carga usa o [k6](https://k6.io/) num cenário incremental simples de 
 
 Para rodar o teste, siga as [instruções oficiais do k6](https://grafana.com/docs/k6/latest/).
 
+O projeto também disponibiliza um docker-compose.yml no diretório `test` para facilitar a execução local dos cenários de teste:
+
+- `docker compose --profile test up`: executa toda a suíte de testes;
+- `docker compose --profile smoke up`: executa testes rápidos para validação básica da aplicação.
+
 As instruções para que o seu backend seja testado de fato estão [descritas aqui](/docs/br/SUBMISSAO.md) na seção **Execução do Teste**.
 
 ## O que é testado
@@ -123,7 +128,7 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se o 
 ```json
 {
   "expected": { "total": 5000, "fraud_count": 1750, "fraud_rate": 35, ... },
-  "p99": "5.81ms",
+  "p99": "5.81",
   "scoring": {
     "breakdown": {
       "true_positive_detections":  1735,
@@ -151,7 +156,7 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se o 
 ```
 
 - `expected` — metadados do dataset (informativo).
-- `p99` — latência observada no percentil 99, em milissegundos. Alimenta o cálculo de `p99_score`.
+- `p99` — latência observada no percentil 99, arredondada, em milissegundos. Alimenta o cálculo de `p99_score`.
 - `breakdown` — contagens brutas de TP, TN, FP, FN e erros HTTP.
 - `failure_rate` — `(FP + FN + Err) / N`. Se passar de 15%, o corte de detecção dispara.
 - `weighted_errors_E` — `1·FP + 3·FN + 5·Err`. Entra no cálculo de `ε` e na penalidade absoluta.
@@ -163,7 +168,6 @@ Se você rodar o teste localmente, um arquivo `results.json` será gerado. Se o 
 - `detection_score.absolute_penalty` — só o termo `−β · log₁₀(1 + E)`. Fica `null` quando o corte dispara.
 - `detection_score.cut_triggered` — `true` se `failure_rate > 15%` e o score caiu para −3000.
 - `final_score` — `p99_score.value + detection_score.value`. É a pontuação final do seu backend.
-
 
 ## Estratégias e dicas
 

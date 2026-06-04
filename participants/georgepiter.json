@@ -2,5 +2,9 @@
   {
     "id": "georgepiter-java",
     "repo": "https://github.com/georgepiter/rinha-2026-java"
+  },
+  {
+    "id": "georgepiter-go",
+    "repo": "https://github.com/georgepiter/rinha-2026-go"
   }
 ]

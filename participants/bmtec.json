@@ -2,5 +2,9 @@
   {
     "id": "bmtec-rust",
     "repo": "https://github.com/bmtec/rinha-backend-2026"
+  },
+  {
+    "id": "bmtec-c-try",
+    "repo": "https://github.com/bmtec/rinha-backend-2026-c-try"
   }
 ]

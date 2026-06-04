@@ -1,4 +1,10 @@
-[{
-    "id": "krymancer-ocaml",
-    "repo": "https://github.com/krymancer/rinha-de-backend-2026-ocaml"
-}]
+[
+    {
+        "id": "krymancer-ocaml",
+        "repo": "https://github.com/krymancer/rinha-de-backend-2026-ocaml"
+    },
+    {
+        "id": "krymancer-zig",
+        "repo": "https://github.com/krymancer/rinha-de-backend-2026-zig"
+    }
+]

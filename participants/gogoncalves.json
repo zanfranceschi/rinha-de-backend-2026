@@ -6,5 +6,9 @@
     {
         "id": "gogoncalves-go",
         "repo": "https://github.com/gogoncalves/rinha-go-2026"
+    },
+    {
+        "id": "gogoncalves-mojo",
+        "repo": "https://github.com/gogoncalves/rinha-mojo-2026"
     }
 ]

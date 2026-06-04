@@ -10,5 +10,9 @@
     {
         "id": "gogoncalves-mojo",
         "repo": "https://github.com/gogoncalves/rinha-mojo-2026"
+    },
+    {
+        "id": "gogoncalves-nim",
+        "repo": "https://github.com/gogoncalves/rinha-nim-2026"
     }
 ]

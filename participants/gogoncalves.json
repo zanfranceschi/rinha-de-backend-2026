@@ -1,4 +1,10 @@
-[{
-    "id": "gogoncalves-zig-ivf",
-    "repo": "https://github.com/gogoncalves/rinha-fraud-2026"
-}]
+[
+    {
+        "id": "gogoncalves-zig-ivf",
+        "repo": "https://github.com/gogoncalves/rinha-fraud-2026"
+    },
+    {
+        "id": "gogoncalves-go",
+        "repo": "https://github.com/gogoncalves/rinha-go-2026"
+    }
+]

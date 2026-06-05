@@ -1,4 +1,8 @@
 [{
     "id": "iamjoaovytor",
     "repo": "https://github.com/iamjoaovytor/iamjoaovytor-swift"
+},
+{
+    "id": "iamjoaovytor-swift-c",
+    "repo": "https://github.com/iamjoaovytor/swift-c-fraud-detector"
 }]

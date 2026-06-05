@@ -1,1 +1,4 @@
-[{ "id": "joao-php-franken", "repo": "https://github.com/jpoliveira08/rinha-de-backend-2026-php-franken" }]
+[
+    { "id": "joao-php-franken", "repo": "https://github.com/jpoliveira08/rinha-de-backend-2026-php-franken" },
+    { "id": "jpoliveira08-go", "repo": "https://github.com/jpoliveira08/rinha-de-backend-2026-go" }
+]

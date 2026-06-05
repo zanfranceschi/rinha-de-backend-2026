@@ -14,5 +14,9 @@
     {
         "id": "krymancer-ocaml-ffi",
         "repo": "https://github.com/krymancer/rinha-de-backend-2026-ocaml-ffi"
+    },
+    {
+        "id": "krymancer-dotnet",
+        "repo": "https://github.com/krymancer/rinha-de-backend-2026-dotnet"
     }
 ]

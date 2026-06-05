@@ -128,7 +128,7 @@ If you run the test locally, a `results.json` file will be generated. If your te
 ```json
 {
   "expected": { "total": 5000, "fraud_count": 1750, "fraud_rate": 35, ... },
-  "p99": "5.81ms",
+  "p99": "5.81",
   "scoring": {
     "breakdown": {
       "true_positive_detections":  1735,
@@ -156,7 +156,7 @@ If you run the test locally, a `results.json` file will be generated. If your te
 ```
 
 - `expected` — dataset metadata (informational).
-- `p99` — observed 99th-percentile latency, in milliseconds. Feeds the `p99_score` computation.
+- `p99` — observed 99th-percentile latency, rounded, in milliseconds. Feeds the `p99_score` computation.
 - `breakdown` — raw counts of TP, TN, FP, FN, and HTTP errors.
 - `failure_rate` — `(FP + FN + Err) / N`. If it goes above 15%, the detection cutoff triggers.
 - `weighted_errors_E` — `1·FP + 3·FN + 5·Err`. Feeds the `ε` calculation and the absolute penalty.
@@ -168,7 +168,6 @@ If you run the test locally, a `results.json` file will be generated. If your te
 - `detection_score.absolute_penalty` — just the `−β · log₁₀(1 + E)` term. Becomes `null` when the cutoff triggers.
 - `detection_score.cut_triggered` — `true` if `failure_rate > 15%` and the score dropped to −3000.
 - `final_score` — `p99_score.value + detection_score.value`. Your backend's final score.
-
 
 ## Strategies and tips
 

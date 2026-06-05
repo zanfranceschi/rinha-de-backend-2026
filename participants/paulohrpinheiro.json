@@ -1,4 +1,8 @@
-[{
-    "id": "paulohrpinheiro-goLang_1.26.3",
-    "repo": "https://github.com/paulohrpinheiro/rinha-backend-2026"
-}]
+[
+  {
+    "id": "paulohrpinheiro-goLang_1.26.3", "repo": "https://github.com/paulohrpinheiro/rinha-backend-2026"
+  },
+  {
+    "id": "paulohrpinheiro-Vlang", "repo": "https://github.com/paulohrpinheiro/rinha2026-em-v"
+  }
+]

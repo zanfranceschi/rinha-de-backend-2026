@@ -90,6 +90,8 @@ export function handleSummary(data) {
     const SCORE_P99_CORTE = -3000;
     const SCORE_DET_CORTE = -3000;
 
+    const r = (v, decimals) => +v.toFixed(decimals);
+
     const httpDuration = data.metrics.http_req_duration.values;
     const p99 = httpDuration['p(99)'];
 
@@ -138,7 +140,7 @@ export function handleSummary(data) {
 
     const result = {
         expected: expectedStats,
-        p99: p99.toFixed(2) + 'ms',
+        p99: p99,
         scoring: {
             breakdown: {
                 false_positive_detections: fp,
@@ -147,20 +149,20 @@ export function handleSummary(data) {
                 true_negative_detections: tn,
                 http_errors: errs,
             },
-            failure_rate: +(failureRate * 100).toFixed(2) + '%',
+            failure_rate: Math.round(failureRate * 1_000_000) / 1_000_000,
             weighted_errors_E: E,
-            error_rate_epsilon: +epsilon.toFixed(6),
+            error_rate_epsilon: epsilon,
             p99_score: {
-                value: +p99Score.toFixed(2),
+                value: p99Score,
                 cut_triggered: p99CutTriggered,
             },
             detection_score: {
-                value: +detScore.toFixed(2),
-                rate_component: cutTriggered ? null : +rateComponent.toFixed(2),
-                absolute_penalty: cutTriggered ? null : +absolutePenalty.toFixed(2),
+                value: detScore,
+                rate_component: cutTriggered ? null : rateComponent,
+                absolute_penalty: cutTriggered ? null : absolutePenalty,
                 cut_triggered: cutTriggered,
             },
-            final_score: +finalScore.toFixed(2),
+            final_score: finalScore
         },
     };
 

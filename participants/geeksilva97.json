@@ -1,4 +1,10 @@
-[{
-    "id": "geeksilva97-ruby-vec1",
+[
+  {
+    "id": "geeksilva97-ruby-ivf",
     "repo": "https://github.com/geeksilva97/rinha-2026"
-}]
+  },
+  {
+    "id": "geeksilva97-cpp",
+    "repo": "https://github.com/geeksilva97/rinha-cpp"
+  }
+]

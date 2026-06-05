@@ -1,4 +1,10 @@
-[{
-    "id": "6se7en",
-    "repo": "https://github.com/6se7en/rinha"
-}]
+[
+    {
+        "id": "6se7en",
+        "repo": "https://github.com/6se7en/rinha"
+    },
+    {
+        "id": "6se7en-nnet",
+        "repo": "https://github.com/6se7en/rinha-nnet"
+    }
+]

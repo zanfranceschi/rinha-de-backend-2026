@@ -1,4 +1,8 @@
 [{
     "id": "gb-a-jvm-and-a-dream",
     "repo": "https://github.com/gb/jvmoonshot-xxvi"
+},
+{
+    "id": "gb-zig",
+    "repo": "https://github.com/gb/rinha-zig"
 }]

@@ -6,5 +6,9 @@
   {
     "id": "bmtec-c-try",
     "repo": "https://github.com/bmtec/rinha-backend-2026-c-try"
+  },
+  {
+    "id": "bmtec-zig",
+    "repo": "https://github.com/bmtec/rinha-backend-2026-zig"
   }
 ]

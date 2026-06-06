@@ -1,4 +1,18 @@
-[{
-    "id": "atomosdovini-go",
-    "repo": "https://github.com/atomosdovini/rinha-fraud-go"
-}]
+[
+    {
+        "id": "atomosdovini-go",
+        "repo": "https://github.com/atomosdovini/rinha-fraud-go"
+    },
+    {
+        "id": "atomosdovini-cpp",
+        "repo": "https://github.com/atomosdovini/rinha-fraud-cpp"
+    },
+    {
+        "id": "atomosdovini-rust",
+        "repo": "https://github.com/atomosdovini/rinha-fraud-rust"
+    },
+    {
+        "id": "atomosdovini-vini",
+        "repo": "https://github.com/atomosdovini/rinha-vini"
+    }
+]

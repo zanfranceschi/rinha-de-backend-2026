@@ -1,6 +1,10 @@
 [
     {
-        "id": "maxsonferovante",
+        "id": "maxsonferovante cpp",
         "repo": "https://github.com/maxsonferovante/vector-based-fraud-detection-api"
+    },
+    {
+        "id": "maxsonferovante rust",
+        "repo": "https://github.com/maxsonferovante/rust-fraud-detection-api"
     }
 ]

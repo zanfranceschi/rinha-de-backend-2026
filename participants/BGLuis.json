@@ -2,5 +2,13 @@
     {
         "id": "bgluis-go-rust",
         "repo": "https://github.com/BGLuis/rinha-backend-2026-go-rust"
+    },
+    {
+        "id": "bgluis-rust-puro",
+        "repo": "https://github.com/BGLuis/rinha-2026-pure-rust"
+    },
+    {
+        "id": "bgluis-go-puro",
+        "repo": "https://github.com/BGLuis/rinha-2026-pure-go"
     }
 ]

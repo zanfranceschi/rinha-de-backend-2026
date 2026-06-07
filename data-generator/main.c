@@ -376,11 +376,11 @@ static int day_of_week(int y, int m, int d) {
 
 /*
  * fraud_ratio: desired fraud fraction (0.0 to 1.0).
- * 10% of the fraud budget becomes borderline, the rest is pure fraud.
- * E.g. fraud_ratio=0.30 -> 70% legit, 27% fraud, 3% borderline.
+ * borderline_ratio: fraction of the fraud budget that becomes borderline (0.0 to 1.0).
+ * E.g. fraud_ratio=0.30, borderline_ratio=0.10 -> 70% legit, 27% fraud, 3% borderline.
  */
-static Profile pick_profile(Rng *r, double fraud_ratio) {
-    double borderline = fraud_ratio * 0.10;
+static Profile pick_profile(Rng *r, double fraud_ratio, double borderline_ratio) {
+    double borderline = fraud_ratio * borderline_ratio;
     double v = rng_f64(r);
     if (v < 1.0 - fraud_ratio) return LEGIT;
     if (v < 1.0 - borderline)  return FRAUD;
@@ -663,6 +663,7 @@ static void usage(const char *prog) {
         "  --payloads N         number of test payloads (default: 1000)\n"
         "  --fraud-ratio-refs F      fraud ratio for references, 0.0 to 1.0 (default: 0.30)\n"
         "  --fraud-ratio-payloads F  fraud ratio for payloads, 0.0 to 1.0 (default: 0.30)\n"
+        "  --borderline-ratio F      fraction of fraud budget that becomes borderline, 0.0 to 1.0 (default: 0.10)\n"
         "  --norm-cfg PATH      path to normalization.json (default: resources/normalization.json)\n"
         "  --mcc-cfg PATH       path to mcc_risk.json (default: resources/mcc_risk.json)\n"
         "  --refs-out PATH      output path for references.json (default: resources/references.json)\n"
@@ -687,6 +688,7 @@ int main(int argc, char **argv) {
     const char *mcc_path      = "resources/mcc_risk.json";
     double fraud_ratio_refs     = 0.30;
     double fraud_ratio_payloads = 0.30;
+    double borderline_ratio     = 0.10;
     const char *refs_out      = "resources/references.json";
     const char *refs_in       = "resources/references.json";
     int reuse_refs            = 0;
@@ -708,6 +710,8 @@ int main(int argc, char **argv) {
             fraud_ratio_refs = atof(argv[++i]);
         else if (strcmp(argv[i], "--fraud-ratio-payloads") == 0 && i + 1 < argc)
             fraud_ratio_payloads = atof(argv[++i]);
+        else if (strcmp(argv[i], "--borderline-ratio") == 0 && i + 1 < argc)
+            borderline_ratio = atof(argv[++i]);
         else if (strcmp(argv[i], "--refs-out") == 0 && i + 1 < argc)
             refs_out = argv[++i];
         else if (strcmp(argv[i], "--refs-in") == 0 && i + 1 < argc)
@@ -752,7 +756,7 @@ int main(int argc, char **argv) {
         rng_init(&rng, refs_seed);
 
         for (int i = 0; i < ref_size; i++) {
-            Profile p   = pick_profile(&rng, fraud_ratio_refs);
+            Profile p   = pick_profile(&rng, fraud_ratio_refs, borderline_ratio);
             Request req = gen_request(&rng, p, &mcc, 0);
             normalize(&req, &norm, &mcc, refs[i].v);
             for (int j = 0; j < VDIM; j++) refs[i].v[j] = round4(refs[i].v[j]);
@@ -791,7 +795,7 @@ int main(int argc, char **argv) {
     TestEntry *entries = malloc((size_t)payload_size * sizeof(TestEntry));
     /* Pass 1 (sequencial): consome RNG — determinismo bit-a-bit. */
     for (int i = 0; i < payload_size; i++) {
-        Profile p = pick_profile(&rng, fraud_ratio_payloads);
+        Profile p = pick_profile(&rng, fraud_ratio_payloads, borderline_ratio);
         entries[i].req = gen_request(&rng, p, &mcc, randomize_payload_dates);
         normalize(&entries[i].req, &norm, &mcc, entries[i].vec);
         for (int j = 0; j < VDIM; j++) entries[i].vec[j] = round4(entries[i].vec[j]);

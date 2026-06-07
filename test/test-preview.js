@@ -35,10 +35,7 @@ export const options = {
             maxVUs: 250,
             gracefulStop: '10s',
             stages: [
-                { duration: '10s', target: 200 },
-                { duration: '30s', target: 2200 },
-                { duration: '80s', target: 1000 },
-                { duration: '15s', target: 3000 },
+                { duration: '120s', target: 900 },
             ],
         },
     },
@@ -59,14 +56,9 @@ export default function () {
     const entry = testData[idx];
     const expectedApproved = entry.expected_approved;
 
-    const { id, ...request } = entry.request;
-    request.id = crypto.randomUUID();
-
-    console.log(request);
-
     const res = http.post(
         'http://localhost:9999/fraud-score',
-        JSON.stringify(request),
+        JSON.stringify(entry.request),
         { headers: { 'Content-Type': 'application/json' }, timeout: '2001ms' }
     );
 

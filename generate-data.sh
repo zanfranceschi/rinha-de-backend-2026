@@ -16,7 +16,7 @@ time ./data-generator/generate \
     --payloads-seed 0 \
     --payloads 200000 \
     --payloads-out test/test-data.json \
-    --fraud-ratio-payloads 0.6 \
-    --borderline-ratio 0.3 \
+    --fraud-ratio-payloads 0.7 \
+    --borderline-ratio 0.4 \
     --mcc-cfg resources/mcc_risk.json \
     --randomize-payload-dates

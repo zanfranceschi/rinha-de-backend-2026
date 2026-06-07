@@ -62,8 +62,6 @@ export default function () {
     const { id, ...request } = entry.request;
     request.id = crypto.randomUUID();
 
-    console.log(request);
-
     const res = http.post(
         'http://localhost:9999/fraud-score',
         JSON.stringify(request),

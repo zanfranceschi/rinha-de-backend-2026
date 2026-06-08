@@ -14,9 +14,9 @@ set -euo pipefail
 time ./data-generator/generate \
     --reuse-refs \
     --payloads-seed 0 \
-    --payloads 200000 \
+    --payloads 700000 \
     --payloads-out test/test-data.json \
-    --fraud-ratio-payloads 0.7 \
-    --borderline-ratio 0.4 \
+    --fraud-ratio-payloads 0.6 \
+    --borderline-ratio 0.8 \
     --mcc-cfg resources/mcc_risk.json \
     --randomize-payload-dates

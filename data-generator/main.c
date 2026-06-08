@@ -222,6 +222,39 @@ static double mcc_lookup(const MCCMap *m, const char *code) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   Progress bar — visual + numeric, redraws a single terminal line in place.
+   Uses \r + ANSI \033[K (clear to end of line) so each update fully replaces
+   the previous one without leaving leftover characters when widths shift.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#define PROGRESS_WIDTH 40
+
+static void progress_render(const char *label, long current, long total) {
+    if (total <= 0) return;
+    double pct = (double)current / (double)total;
+    if (pct > 1.0) pct = 1.0;
+    int filled = (int)(pct * PROGRESS_WIDTH);
+    printf("\r\033[K  %s [", label);
+    for (int i = 0; i < PROGRESS_WIDTH; i++)
+        putchar(i < filled ? '#' : '-');
+    printf("] %ld/%ld (%5.1f%%)", current, total, pct * 100.0);
+    fflush(stdout);
+}
+
+static void progress_finish(const char *label, long total) {
+    progress_render(label, total, total);
+    putchar('\n');
+    fflush(stdout);
+}
+
+/* How often to refresh the bar — every ~0.5% of work, min 1, max ~1000 ticks. */
+static long progress_step(long total) {
+    long step = total / 200;
+    if (step < 1) step = 1;
+    return step;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    JSON number formatting — clean output without floating-point noise
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -755,6 +788,7 @@ int main(int argc, char **argv) {
         refs = malloc((size_t)ref_size * sizeof(RefVec));
         rng_init(&rng, refs_seed);
 
+        long refs_step = progress_step(ref_size);
         for (int i = 0; i < ref_size; i++) {
             Profile p   = pick_profile(&rng, fraud_ratio_refs, borderline_ratio);
             Request req = gen_request(&rng, p, &mcc, 0);
@@ -765,7 +799,10 @@ int main(int argc, char **argv) {
                 strcpy(refs[i].label, rng_f64(&rng) < 0.5 ? "fraud" : "legit");
             else
                 strcpy(refs[i].label, p == FRAUD ? "fraud" : "legit");
+
+            if ((i + 1) % refs_step == 0) progress_render("refs    ", i + 1, ref_size);
         }
+        progress_finish("refs    ", ref_size);
 
         cJSON *refs_json = cJSON_CreateArray();
         for (int i = 0; i < ref_size; i++) {
@@ -793,19 +830,40 @@ int main(int argc, char **argv) {
     rng_init(&rng, payloads_seed);
 
     TestEntry *entries = malloc((size_t)payload_size * sizeof(TestEntry));
+    long pay_step = progress_step(payload_size);
+
     /* Pass 1 (sequencial): consome RNG — determinismo bit-a-bit. */
     for (int i = 0; i < payload_size; i++) {
         Profile p = pick_profile(&rng, fraud_ratio_payloads, borderline_ratio);
         entries[i].req = gen_request(&rng, p, &mcc, randomize_payload_dates);
         normalize(&entries[i].req, &norm, &mcc, entries[i].vec);
         for (int j = 0; j < VDIM; j++) entries[i].vec[j] = round4(entries[i].vec[j]);
+
+        if ((i + 1) % pay_step == 0) progress_render("payloads", i + 1, payload_size);
     }
+    progress_finish("payloads", payload_size);
+
     /* Pass 2 (paralelo): KNN é puro — cada i é independente. */
+    long knn_done = 0, knn_drawn = 0;
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < payload_size; i++) {
         knn_classify(entries[i].vec, refs, ref_size, &entries[i].approved, &entries[i].fraud_score);
         entries[i].fraud_score = round4(entries[i].fraud_score);
+
+        long done;
+        #pragma omp atomic capture
+        done = ++knn_done;
+        if (done % pay_step == 0) {
+            /* Only redraw if this tick actually advances past what's on screen —
+               prevents threads finishing out-of-order from rewinding the bar. */
+            #pragma omp critical(progress_bar)
+            if (done > knn_drawn) {
+                knn_drawn = done;
+                progress_render("knn     ", done, payload_size);
+            }
+        }
     }
+    progress_finish("knn     ", payload_size);
 
     /* Stats */
     int fraud_n = 0, legit_n = 0, edge_n = 0;

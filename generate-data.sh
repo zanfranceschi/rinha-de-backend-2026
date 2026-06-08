@@ -15,7 +15,8 @@ time ./data-generator/generate \
     --reuse-refs \
     --payloads-seed 0 \
     --payloads 700000 \
-    --payloads-out test/test-data.json \
+    --payloads-out test/test-data.csv \
+    --payloads-out-format csv \
     --fraud-ratio-payloads 0.6 \
     --borderline-ratio 0.8 \
     --mcc-cfg resources/mcc_risk.json \

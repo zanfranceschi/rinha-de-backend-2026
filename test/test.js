@@ -4,52 +4,17 @@ import { SharedArray } from 'k6/data';
 import { Counter } from 'k6/metrics';
 import { textSummary } from './k6-summary.js';
 import exec from 'k6/execution';
-import papaparse from 'https://jslib.k6.io/papaparse/5.1.1/index.js';
 
-const csvRaw = open('./test-data.csv');
+const jsonRaw = open('./test-data.json');
 
 const testData = new SharedArray('test-data', function () {
-    const parsed = papaparse.parse(csvRaw, { header: true, comments: '#', skipEmptyLines: true });
-    return parsed.data.map(r => ({
-        request: {
-            id: r.id,
-            transaction: {
-                amount: +r.amount,
-                installments: +r.installments,
-                requested_at: r.requested_at,
-            },
-            customer: {
-                avg_amount: +r.cust_avg,
-                tx_count_24h: +r.tx_count_24h,
-                known_merchants: r.known_merchants ? r.known_merchants.split('|') : [],
-            },
-            merchant: {
-                id: r.merch_id,
-                mcc: r.mcc,
-                avg_amount: +r.merch_avg,
-            },
-            terminal: {
-                is_online: r.is_online === 'true',
-                card_present: r.card_present === 'true',
-                km_from_home: +r.km_from_home,
-            },
-            last_transaction: r.last_ts
-                ? { timestamp: r.last_ts, km_from_current: +r.last_km }
-                : null,
-        },
-        expected_approved: r.expected_approved === 'true',
-        expected_fraud_score: +r.expected_fraud_score,
-    }));
+    const root = JSON.parse(jsonRaw);
+    return root.entries;
 });
 
 const statsArr = new SharedArray('test-stats', function () {
-    const line = csvRaw.split('\n')[0].replace('# ', '');
-    const s = {};
-    line.split(',').forEach(pair => {
-        const [k, v] = pair.split('=');
-        s[k] = +v;
-    });
-    return [s];
+    const root = JSON.parse(jsonRaw);
+    return [root.stats];
 });
 const expectedStats = statsArr[0];
 
@@ -90,12 +55,12 @@ export function setup() {
         + `${expectedStats.legit_count} legit (${expectedStats.legit_rate}%), `
         + `edge cases: ${expectedStats.edge_case_rate}%`
     );
+    console.log(`Cycling through ${testData.length} payloads`);
 }
 
 export default function () {
     const idx = exec.scenario.iterationInTest;
-    if (idx >= testData.length) return;
-    const entry = testData[idx];
+    const entry = testData[idx % testData.length];
     const expectedApproved = entry.expected_approved;
 
     const { id, ...request } = entry.request;

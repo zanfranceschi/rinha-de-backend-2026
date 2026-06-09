@@ -706,8 +706,6 @@ static void usage(const char *prog) {
         "  --payloads-out PATH  output path for payloads (default: test/test-data.json)\n"
         "  --refs-seed N        RNG seed for reference generation (default: 42)\n"
         "  --payloads-seed N    RNG seed for payload generation (default: 4242)\n"
-        "  --payloads-out-format csv|json\n"
-        "                       output format for payloads (default: json)\n"
         "  --pretty-json        indent JSON output (default: compact)\n"
         "  --randomize-payload-dates\n"
         "                       payloads usam datas aleatórias: requested_at em\n"
@@ -731,7 +729,6 @@ int main(int argc, char **argv) {
     uint64_t refs_seed        = REF_SEED;
     uint64_t payloads_seed    = PAY_SEED;
     int randomize_payload_dates = 0;
-    int csv_mode                = 0; /* 0=json, 1=csv */
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--refs") == 0 && i + 1 < argc)
@@ -760,12 +757,6 @@ int main(int argc, char **argv) {
             refs_seed = strtoull(argv[++i], NULL, 10);
         else if (strcmp(argv[i], "--payloads-seed") == 0 && i + 1 < argc)
             payloads_seed = strtoull(argv[++i], NULL, 10);
-        else if (strcmp(argv[i], "--payloads-out-format") == 0 && i + 1 < argc) {
-            const char *fmt = argv[++i];
-            if (strcmp(fmt, "csv") == 0) csv_mode = 1;
-            else if (strcmp(fmt, "json") == 0) csv_mode = 0;
-            else { fprintf(stderr, "unknown format: %s (expected csv or json)\n", fmt); return 1; }
-        }
         else if (strcmp(argv[i], "--pretty-json") == 0)
             pretty_json = 1;
         else if (strcmp(argv[i], "--randomize-payload-dates") == 0)
@@ -881,72 +872,31 @@ int main(int argc, char **argv) {
         if (entries[i].fraud_score == THRESHOLD) edge_n++;
     }
 
-    if (csv_mode) {
-        /* --- CSV output --- */
-        printf("Writing CSV to %s...\n", payloads_out);
-        FILE *csv = fopen(payloads_out, "w");
-        if (!csv) { fprintf(stderr, "error: cannot open %s\n", payloads_out); return 1; }
-        fprintf(csv, "# total=%d,fraud_count=%d,legit_count=%d,"
-                     "fraud_rate=%.4f,legit_rate=%.4f,"
-                     "edge_case_count=%d,edge_case_rate=%.4f\n",
-                payload_size, fraud_n, legit_n,
-                round4((double)fraud_n / payload_size),
-                round4((double)legit_n / payload_size),
-                edge_n, round4((double)edge_n / payload_size));
-        fprintf(csv, "id,amount,installments,requested_at,cust_avg,tx_count_24h,"
-                     "known_merchants,merch_id,mcc,merch_avg,is_online,card_present,"
-                     "km_from_home,last_ts,last_km,expected_approved,expected_fraud_score\n");
-        for (int i = 0; i < payload_size; i++) {
-            Request *r = &entries[i].req;
-            fprintf(csv, "%s,%.2f,%d,%s,%.2f,%d,",
-                    r->id, r->amount, r->installments, r->requested_at,
-                    r->cust_avg, r->tx_count_24h);
-            /* known_merchants: pipe-separated */
-            for (int j = 0; j < r->known_n; j++) {
-                if (j > 0) fputc('|', csv);
-                fputs(r->known[j], csv);
-            }
-            fprintf(csv, ",%s,%s,%.2f,%s,%s,",
-                    r->merch_id, r->mcc, r->merch_avg,
-                    r->is_online ? "true" : "false",
-                    r->card_present ? "true" : "false");
-            fprintf(csv, "%.10g,", r->km_home);
-            if (r->has_last)
-                fprintf(csv, "%s,%.10g,", r->last_ts, r->last_km);
-            else
-                fprintf(csv, ",,");
-            fprintf(csv, "%s,%.4g\n",
-                    entries[i].approved ? "true" : "false",
-                    entries[i].fraud_score);
-        }
-        fclose(csv);
-    } else {
-        /* --- JSON output --- */
-        cJSON *root = cJSON_CreateObject();
+    /* --- JSON output --- */
+    cJSON *root = cJSON_CreateObject();
 
-        cJSON_AddStringToObject(root, "references_checksum_sha256", refs_checksum);
+    cJSON_AddStringToObject(root, "references_checksum_sha256", refs_checksum);
 
-        cJSON *stats = cJSON_AddObjectToObject(root, "stats");
-        cJSON_AddItemToObject(stats, "total",           jnum(payload_size));
-        cJSON_AddItemToObject(stats, "fraud_count",     jnum(fraud_n));
-        cJSON_AddItemToObject(stats, "legit_count",     jnum(legit_n));
-        cJSON_AddItemToObject(stats, "fraud_rate",      jnum(round4((double)fraud_n / payload_size)));
-        cJSON_AddItemToObject(stats, "legit_rate",      jnum(round4((double)legit_n / payload_size)));
-        cJSON_AddItemToObject(stats, "edge_case_count", jnum(edge_n));
-        cJSON_AddItemToObject(stats, "edge_case_rate",  jnum(round4((double)edge_n / payload_size)));
+    cJSON *stats = cJSON_AddObjectToObject(root, "stats");
+    cJSON_AddItemToObject(stats, "total",           jnum(payload_size));
+    cJSON_AddItemToObject(stats, "fraud_count",     jnum(fraud_n));
+    cJSON_AddItemToObject(stats, "legit_count",     jnum(legit_n));
+    cJSON_AddItemToObject(stats, "fraud_rate",      jnum(round4((double)fraud_n / payload_size)));
+    cJSON_AddItemToObject(stats, "legit_rate",      jnum(round4((double)legit_n / payload_size)));
+    cJSON_AddItemToObject(stats, "edge_case_count", jnum(edge_n));
+    cJSON_AddItemToObject(stats, "edge_case_rate",  jnum(round4((double)edge_n / payload_size)));
 
-        cJSON *arr = cJSON_AddArrayToObject(root, "entries");
-        for (int i = 0; i < payload_size; i++) {
-            cJSON *entry = cJSON_CreateObject();
-            cJSON_AddItemToObject(entry, "request", request_to_json(&entries[i].req));
-            cJSON_AddBoolToObject(entry, "expected_approved", entries[i].approved);
-            cJSON_AddItemToObject(entry, "expected_fraud_score", jnum(entries[i].fraud_score));
-            cJSON_AddItemToArray(arr, entry);
-        }
-
-        write_json_file(payloads_out, root);
-        cJSON_Delete(root);
+    cJSON *arr = cJSON_AddArrayToObject(root, "entries");
+    for (int i = 0; i < payload_size; i++) {
+        cJSON *entry = cJSON_CreateObject();
+        cJSON_AddItemToObject(entry, "request", request_to_json(&entries[i].req));
+        cJSON_AddBoolToObject(entry, "expected_approved", entries[i].approved);
+        cJSON_AddItemToObject(entry, "expected_fraud_score", jnum(entries[i].fraud_score));
+        cJSON_AddItemToArray(arr, entry);
     }
+
+    write_json_file(payloads_out, root);
+    cJSON_Delete(root);
 
     printf("  -> %s (%d payloads)\n", payloads_out, payload_size);
 

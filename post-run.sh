@@ -11,3 +11,5 @@ jq --slurpfile new test/results.json \
    '. + [$new[0] + {timestamp: $ts}]' \
    test/final-results.json > "$tmp"
 mv "$tmp" test/final-results.json
+
+cp -f test/final-results.json ../final-results.json

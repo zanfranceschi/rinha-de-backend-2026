@@ -9,5 +9,8 @@
     "poll_interval_ms": 5000,
     "max_preview_submissions_per_day": 20,
     "max_cpu": 1.0,
-    "max_memory_mb": "350"
+    "max_memory_mb": "350",
+    "docker_hub_pull_limit": 100,
+    "docker_hub_pull_window_ms": 21600000,
+    "estimated_pulls_per_submission": 2
 }

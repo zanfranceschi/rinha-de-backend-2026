@@ -4,7 +4,7 @@
 
 [Português](#português) · [English](#english)
 
-### Official Ranking Preview @ [rinhadebackend.com.br](https://rinhadebackend.com.br/)
+### Edição encerrada! Resultados oficiais em [rinhadebackend.com.br](https://rinhadebackend.com.br/) · Edition closed! Official results at [rinhadebackend.com.br](https://rinhadebackend.com.br/)
 
 ---
 

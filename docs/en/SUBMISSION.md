@@ -84,11 +84,13 @@ A note on the **open_to_work** field: if you are looking for new opportunities a
 
 ## Preview and final test
 
+> **Edition closed!** Submissions are closed and the final test has already run. The official results are available at **[rinhadebackend.com.br](https://rinhadebackend.com.br/)**. The section below remains as a record of how the process worked.
+
 There are two testing moments in Rinha:
 
 - **Preview tests** — you can submit your backend to as many preview tests as you want – they serve as a practice run for the final test. Just open an issue [like this one](https://github.com/zanfranceschi/rinha-de-backend-2026/issues/49) with `rinha/test [optional id of your submission]` in the issue description. The Rinha Engine scans all open issues with that description, runs a preview test, posts the results (or any error) together with your score as a comment, and closes the issue. Take full advantage of preview tests to make small adjustments, try different configurations, and so on.
 
-- **Final test** — runs a single time, at the end of Rinha, and it is what defines the official score of each participant. It uses a different script from the preview script — likely heavier, capable of demanding more from your backend (more volume, more load, different scenarios). The final deadline for you to send your submission is **2026-06-05T23:59:59.999-03:00**! The final result will be released in the week of June 8th!
+- **Final test** — runs a single time, at the end of Rinha, and it is what defines the official score of each participant. It uses a different script from the preview script — likely heavier, capable of demanding more from your backend (more volume, more load, different scenarios). The final deadline was **2026-06-05T23:59:59.999-03:00** and the final test has already run — the official results are at **[rinhadebackend.com.br](https://rinhadebackend.com.br/)**.
 
 
 ### Test environment

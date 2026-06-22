@@ -1,6 +1,6 @@
 # Rinha de Backend 2026 – Detecção de fraude por busca vetorial!
 
-**Atenção!** O prazo final para você pode mandar sua submissão é até **2026-06-05T23:59:59.999-03:00**! O resultado final saí na semana do dia 8 de Junho!
+**Edição encerrada!** As submissões estão fechadas e os resultados oficiais já estão disponíveis em **[rinhadebackend.com.br](https://rinhadebackend.com.br/)**. Obrigado a todos que participaram!
 
 ## O desafio
 

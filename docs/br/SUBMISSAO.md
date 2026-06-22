@@ -88,11 +88,13 @@ Sobre o campo **open_to_work**: se você estiver em busca de novas oportunidades
 
 ## Prévia e teste final
 
+> **Edição encerrada!** As submissões estão fechadas e o teste final já foi executado. Os resultados oficiais estão disponíveis em **[rinhadebackend.com.br](https://rinhadebackend.com.br/)**. A seção abaixo fica como registro de como o processo funcionou.
+
 Existem dois momentos de teste na Rinha:
 
 - **Testes de prévia** — você pode submeter seu backend a quantos testes de prévia quiser – eles são como um simulado para os testes finais. Basta abrir uma issue [como essa](https://github.com/zanfranceschi/rinha-de-backend-2026/issues/49) colocando `rinha/test [id opcional da sua submissão]` na descrição da issue. A Engine da Rinha varre todas as issues abertas com essa descrição, executa um teste de prévia, posta os resultados (ou erro) junto com sua pontuação em formato de comentário e fecha a issue. Use e abuse das prévias para fazer pequenos ajustes, testar diferentes configurações, etc.
 
-- **Teste final** — roda uma única vez, ao final da Rinha, e é o que define a pontuação oficial de cada participante. Ele usa um script diferente do script de prévia — provavelmente mais pesado, capaz de exigir mais do seu backend (mais volume, mais carga, cenários diferentes). O prazo final para você pode mandar sua submissão é até **2026-06-05T23:59:59.999-03:00**! O resultado final saí na semana do dia 8 de Junho!
+- **Teste final** — roda uma única vez, ao final da Rinha, e é o que define a pontuação oficial de cada participante. Ele usa um script diferente do script de prévia — provavelmente mais pesado, capaz de exigir mais do seu backend (mais volume, mais carga, cenários diferentes). O prazo final foi **2026-06-05T23:59:59.999-03:00** e o teste final já foi executado — os resultados oficiais estão em **[rinhadebackend.com.br](https://rinhadebackend.com.br/)**.
 
 
 ### Ambiente de testes

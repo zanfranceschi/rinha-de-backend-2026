@@ -1,6 +1,6 @@
 # Rinha de Backend 2026 – Fraud detection via vector search!
 
-**Heads up!** The final deadline for you to send your submission is **2026-06-05T23:59:59.999-03:00**! The final result will be released in the week of June 8th!
+**Edition closed!** Submissions are closed and the official results are now available at **[rinhadebackend.com.br](https://rinhadebackend.com.br/)**. Thanks to everyone who took part!
 
 ## The challenge
 

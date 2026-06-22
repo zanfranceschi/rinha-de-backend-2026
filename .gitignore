@@ -5,3 +5,4 @@ resources/references.json
 test/results.json
 temporary-results
 misc/participant-removal.sh
+.DS_Store
